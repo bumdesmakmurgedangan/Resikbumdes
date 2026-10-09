@@ -1,0 +1,3531 @@
+============================================================
+PRODUCT REQUIREMENTS DOCUMENT (PRD)
+RESIK
+Retribusi Elektronik & Sistem Informasi Kebersihan
+BUMDes Makmur Gedangan
+============================================================
+
+VERSI: 4.0 MASTER PRD
+STATUS: FINAL REQUIREMENTS / DEVELOPMENT READY
+PLATFORM: RESPONSIVE WEB APP / MOBILE-FIRST
+BACKEND: SUPABASE
+DATABASE: POSTGRESQL (SUPABASE)
+AUTHENTICATION: SUPABASE AUTH + CUSTOMER ID/PIN
+STORAGE: SUPABASE STORAGE
+PAYMENT MVP: TUNAI + TRANSFER BANK + QRIS MANUAL
+PAYMENT GATEWAY: ROADMAP, BUKAN MVP
+
+============================================================
+1. EXECUTIVE SUMMARY
+============================================================
+
+RESIK (Retribusi Elektronik & Sistem Informasi Kebersihan)
+adalah web application untuk digitalisasi pengelolaan iuran
+layanan persampahan BUMDes Makmur Gedangan.
+
+RESIK dibuat untuk menggantikan proses manual menggunakan
+kartu pelanggan serta membantu BUMDes mengelola pelanggan,
+lokasi layanan, tagihan, pembayaran, verifikasi, tunggakan,
+komunikasi, laporan, dan administrasi secara terpusat.
+
+Pelanggan tidak perlu menginstal aplikasi.
+
+RESIK dapat dibuka melalui browser pada smartphone maupun
+komputer.
+
+Fokus utama RESIK:
+
+1. Pelanggan dapat mengetahui apakah iuran bulan berjalan
+   sudah dibayar atau belum.
+2. Admin dapat memantau pembayaran dan tunggakan.
+3. Pelanggan dapat membayar melalui tunai, transfer, atau QRIS.
+4. Pelanggan dapat mengunggah bukti pembayaran.
+5. Admin dapat memverifikasi pembayaran.
+6. Sistem menghasilkan bukti pembayaran digital.
+7. Sistem mendeteksi tunggakan otomatis.
+8. Admin/petugas dapat mengingatkan pelanggan melalui WhatsApp.
+9. Admin dapat mengirim broadcast.
+10. Satu pelanggan dapat memiliki beberapa lokasi layanan.
+11. Super Admin dapat mengatur konfigurasi aplikasi tanpa
+    mengubah source code.
+12. Semua aktivitas penting tercatat dalam audit log.
+
+============================================================
+2. IDENTITAS PRODUK
+============================================================
+
+NAMA APLIKASI:
+RESIK
+
+KEPANJANGAN:
+Retribusi Elektronik & Sistem Informasi Kebersihan
+
+ORGANISASI:
+BUMDes Makmur Gedangan
+
+TAGLINE:
+"Iuran Mudah, Lingkungan Bersih."
+
+LOGO:
+https://i.ibb.co.com/nNnkDbWh/Logo-Resik-dengan-R-Terbuka.webp
+
+Logo digunakan pada:
+- Login page
+- Header dashboard
+- Bukti pembayaran
+- Laporan
+- Halaman pelanggan
+- Halaman admin
+- Branding aplikasi
+
+============================================================
+3. PRODUCT VISION
+============================================================
+
+Menjadikan RESIK sebagai pusat digital layanan persampahan
+BUMDes Makmur Gedangan yang sederhana bagi masyarakat,
+efisien bagi pengelola, transparan dalam pembayaran, dan
+mudah dikembangkan mengikuti kebutuhan BUMDes.
+
+PRINSIP:
+
+"Sederhana untuk warga, lengkap untuk BUMDes."
+
+============================================================
+4. MASALAH YANG DISELESAIKAN
+============================================================
+
+Masalah saat ini:
+
+1. Kartu pelanggan manual dapat hilang.
+2. Kartu dapat rusak.
+3. Kartu dapat lupa diisi petugas.
+4. Pelanggan sulit mengetahui status pembayaran bulan berjalan.
+5. Admin sulit memantau pelanggan yang belum membayar.
+6. Tunggakan sulit dipantau secara terpusat.
+7. Rekap pembayaran masih membutuhkan pekerjaan manual.
+8. Data pelanggan belum sepenuhnya terpusat.
+9. Informasi BUMDes belum terintegrasi secara digital.
+10. Satu pelanggan dapat memiliki rumah sekaligus toko/usaha.
+11. Perubahan rekening, tarif, wilayah, kontak, dan konfigurasi
+    seharusnya tidak membutuhkan perubahan kode aplikasi.
+12. BUMDes membutuhkan cara praktis mengingatkan pelanggan
+    yang menunggak.
+
+============================================================
+5. TUJUAN PRODUK
+============================================================
+
+RESIK harus:
+
+1. Mendigitalisasi kartu pelanggan.
+2. Menampilkan status pembayaran secara transparan.
+3. Menampilkan histori pembayaran.
+4. Menampilkan tagihan berjalan.
+5. Mendeteksi tunggakan otomatis.
+6. Mendukung pembayaran tunai.
+7. Mendukung transfer bank.
+8. Mendukung QRIS manual.
+9. Mendukung upload bukti pembayaran.
+10. Mendukung verifikasi pembayaran.
+11. Menghasilkan bukti pembayaran digital.
+12. Menyediakan reminder WhatsApp.
+13. Menyediakan broadcast.
+14. Mengelola data pelanggan.
+15. Mendukung multi-layanan dalam satu akun pelanggan.
+16. Mendukung RW dan RT.
+17. Mendukung kategori pelanggan.
+18. Mendukung tarif berbeda berdasarkan kategori.
+19. Menyimpan GPS lokasi layanan.
+20. Mendukung import Excel/CSV.
+21. Menyediakan laporan.
+22. Menyediakan audit log.
+23. Menyediakan manajemen pengguna.
+24. Menyediakan role dan permission.
+25. Memungkinkan seluruh konfigurasi operasional dikelola
+    oleh Super Admin.
+
+============================================================
+6. PLATFORM
+============================================================
+
+RESIK HANYA BERUPA WEB APP.
+
+Tidak perlu:
+- Android native app
+- iOS native app
+- Instalasi APK
+- Instalasi dari Play Store
+
+Harus dapat dibuka melalui:
+- Google Chrome
+- Microsoft Edge
+- Safari
+- Browser Android
+- Browser modern lainnya
+
+PRIORITAS:
+Mobile-first.
+
+Tampilan desktop juga harus responsive.
+
+============================================================
+7. USER ROLES
+============================================================
+
+RESIK memiliki 4 role utama:
+
+1. SUPER_ADMIN
+2. ADMIN
+3. PETUGAS
+4. CUSTOMER
+
+============================================================
+8. SUPER ADMIN
+============================================================
+
+Super Admin memiliki akses penuh terhadap sistem.
+
+Kemampuan:
+
+- Mengelola pengguna.
+- Mengatur role.
+- Mengatur permission.
+- Mengelola pelanggan.
+- Mengelola lokasi layanan.
+- Mengelola RW.
+- Mengelola RT.
+- Mengelola kategori.
+- Mengelola tarif.
+- Mengatur tanggal jatuh tempo.
+- Mengelola rekening bank.
+- Mengelola QRIS.
+- Mengelola kontak BUMDes.
+- Mengelola media sosial.
+- Mengelola website BUMDes.
+- Mengelola template pesan.
+- Mengelola broadcast.
+- Mengelola data import.
+- Melihat laporan.
+- Melihat audit log.
+- Mengatur konfigurasi aplikasi.
+
+============================================================
+9. ADMIN
+============================================================
+
+Admin berfokus pada operasional dan administrasi.
+
+Kemampuan default:
+
+- Melihat pelanggan.
+- Menambah pelanggan.
+- Mengubah pelanggan.
+- Melihat lokasi layanan.
+- Mencatat pembayaran.
+- Memverifikasi transfer/QRIS.
+- Melihat tunggakan.
+- Mengirim reminder WhatsApp.
+- Mengirim broadcast.
+- Melihat laporan operasional.
+- Reset PIN pelanggan.
+- Melihat histori pembayaran.
+
+Admin tidak dapat mengubah konfigurasi kritis seperti:
+- Role pengguna
+- Permission utama
+- Rekening
+- Tarif
+- Konfigurasi sistem
+
+kecuali Super Admin memberikan permission tersebut.
+
+============================================================
+10. PETUGAS
+============================================================
+
+Petugas berfokus pada operasional lapangan.
+
+Kemampuan default:
+
+- Mencari pelanggan.
+- Melihat data pelanggan.
+- Melihat lokasi layanan.
+- Melihat tagihan.
+- Mencatat pembayaran tunai.
+- Melihat status pembayaran.
+- Melihat tunggakan.
+- Membantu pelanggan.
+- Mengirim reminder WhatsApp jika diberi permission.
+
+Petugas tidak memiliki akses default terhadap:
+- Manajemen pengguna
+- Tarif
+- Rekening
+- Konfigurasi sistem
+- Audit log penuh
+
+============================================================
+11. CUSTOMER / PELANGGAN
+============================================================
+
+Pelanggan dapat:
+
+- Login.
+- Melihat profil.
+- Melihat ID pelanggan.
+- Melihat semua lokasi layanan miliknya.
+- Melihat tagihan.
+- Melihat status pembayaran.
+- Melihat tunggakan.
+- Melakukan pembayaran.
+- Melihat rekening pembayaran.
+- Menyalin nomor rekening.
+- Melihat QRIS.
+- Upload bukti pembayaran.
+- Melihat status verifikasi.
+- Melihat bukti pembayaran digital.
+- Melihat histori pembayaran.
+- Membaca broadcast.
+- Mengubah PIN.
+- Menghubungi BUMDes.
+
+Pelanggan hanya dapat melihat data miliknya sendiri.
+
+============================================================
+12. ROLE DAN PERMISSION SYSTEM
+============================================================
+
+Sistem tidak boleh hanya bergantung pada nama role.
+
+Gunakan:
+
+ROLE -> PERMISSION
+
+Contoh permission:
+
+CUSTOMER_VIEW
+CUSTOMER_CREATE
+CUSTOMER_UPDATE
+CUSTOMER_DELETE
+SERVICE_VIEW
+SERVICE_CREATE
+SERVICE_UPDATE
+PAYMENT_CREATE
+PAYMENT_VERIFY
+OVERDUE_VIEW
+WHATSAPP_REMINDER
+BROADCAST_SEND
+REPORT_VIEW
+REPORT_EXPORT
+IMPORT_DATA
+EXPORT_DATA
+MANAGE_TARIFF
+MANAGE_REGION
+MANAGE_BANK
+MANAGE_QRIS
+MANAGE_SOCIAL
+MANAGE_USERS
+MANAGE_SETTINGS
+VIEW_AUDIT_LOG
+
+Super Admin dapat memberikan permission tertentu kepada role.
+
+============================================================
+13. MANAJEMEN PENGGUNA
+============================================================
+
+Menu:
+
+Pengaturan -> Pengguna & Akses
+
+Super Admin dapat:
+
+- Menambah pengguna.
+- Mengubah pengguna.
+- Mengubah role.
+- Mengatur permission.
+- Mengaktifkan pengguna.
+- Menonaktifkan pengguna.
+- Melihat histori aktivitas pengguna.
+
+Form tambah pengguna:
+
+- Nama lengkap
+- Email
+- Nomor HP
+- Role
+- Status
+- Permission tambahan jika diperlukan
+
+Contoh:
+
+Nama:
+Andi
+
+Email:
+andi@bumdes.id
+
+Role:
+PETUGAS
+
+Status:
+AKTIF
+
+============================================================
+14. NONAKTIFKAN PENGGUNA
+============================================================
+
+Pengguna jangan langsung dihapus.
+
+Gunakan status:
+
+ACTIVE
+INACTIVE
+
+Jika INACTIVE:
+- Tidak dapat login.
+- Histori aktivitas tetap ada.
+- Data audit tetap ada.
+
+============================================================
+15. AUDIT MANAGEMEN PENGGUNA
+============================================================
+
+Catat:
+
+- User dibuat.
+- User diubah.
+- Role diubah.
+- Permission diubah.
+- User dinonaktifkan.
+- User diaktifkan.
+- Password/reset dilakukan.
+
+============================================================
+16. CUSTOMER LOGIN
+============================================================
+
+Pelanggan login menggunakan:
+
+ID PELANGGAN + PIN
+
+Contoh:
+
+ID Pelanggan:
+PLG-RW03-0025
+
+PIN:
+1234
+
+OTP TIDAK digunakan pada MVP.
+
+Alasan:
+- Tidak semua warga memiliki HP pribadi.
+- OTP membutuhkan biaya/infrastruktur tambahan.
+- Login PIN lebih sederhana untuk tahap awal.
+
+============================================================
+17. PIN PELANGGAN
+============================================================
+
+PIN:
+- 4 digit.
+- PIN awal dapat diberikan sama/default.
+- Pelanggan dapat mengubah PIN.
+- PIN tidak boleh disimpan sebagai plaintext.
+- Gunakan hash.
+
+Field:
+
+pin_hash
+is_default_pin
+
+Pelanggan yang masih menggunakan PIN default diarahkan
+untuk mengganti PIN.
+
+============================================================
+18. RESET PIN
+============================================================
+
+Jika pelanggan lupa PIN:
+
+Pelanggan:
+-> Hubungi BUMDes melalui WhatsApp
+
+Admin/Super Admin:
+-> Cari pelanggan
+-> Reset PIN
+-> Sistem menghasilkan PIN sementara
+-> Pelanggan login
+-> Pelanggan mengganti PIN
+
+Reset PIN harus dicatat pada audit log.
+
+============================================================
+19. LOGIN PAGE
+============================================================
+
+Login page harus menampilkan:
+
+- Logo RESIK
+- Nama RESIK
+- Deskripsi aplikasi
+- Link website BUMDes
+- Input ID Pelanggan
+- Input PIN
+- Tombol Masuk
+- Bantuan WhatsApp
+- Media sosial resmi BUMDes
+
+Struktur:
+
+LOGO RESIK
+
+RESIK
+Retribusi Elektronik & Sistem Informasi Kebersihan
+
+Website BUMDes
+
+[ ID PELANGGAN ]
+
+[ PIN ] [lihat/sembunyikan]
+
+[ MASUK KE LAYANAN ]
+
+Lupa PIN atau butuh bantuan?
+
+[ Hubungi WhatsApp BUMDes ]
+
+MEDIA SOSIAL RESMI BUMDES
+
+[ Instagram ] [ TikTok ] [ Facebook ]
+[ Website ] [ Email ] [ Lokasi ]
+
+============================================================
+20. WHATSAPP PADA LOGIN PAGE
+============================================================
+
+Tombol:
+
+"Hubungi WhatsApp BUMDes"
+
+Nomor default saat ini:
+
+085150736692
+
+Nomor harus dapat diubah oleh Super Admin.
+
+Format link:
+
+https://wa.me/6285150736692
+
+Dapat menggunakan pesan otomatis:
+
+Halo BUMDes Makmur Gedangan, saya membutuhkan bantuan
+terkait akun RESIK.
+
+Jika nomor dikosongkan:
+Tombol tidak ditampilkan.
+
+============================================================
+21. WEBSITE BUMDES PADA LOGIN PAGE
+============================================================
+
+Website BUMDes ditampilkan di bawah logo RESIK.
+
+Contoh:
+
+🌐 Kunjungi Website BUMDes Makmur Gedangan
+
+URL dikelola Super Admin.
+
+Jika kosong:
+Link tidak ditampilkan.
+
+============================================================
+22. MEDIA SOSIAL RESMI BUMDES
+============================================================
+
+Media yang didukung:
+
+- WhatsApp
+- Instagram
+- TikTok
+- Facebook
+- Website
+- Email
+- Google Maps
+
+Jika field kosong:
+Tombol otomatis tidak muncul.
+
+Super Admin dapat:
+- Menambah.
+- Mengubah.
+- Mengaktifkan.
+- Menonaktifkan.
+- Mengatur urutan.
+
+============================================================
+23. DATABASE ORGANIZATION LINKS
+============================================================
+
+TABLE: organization_links
+
+id UUID PK
+type TEXT
+label TEXT
+url TEXT
+icon TEXT
+sort_order INTEGER
+is_active BOOLEAN
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+updated_by UUID
+
+TYPE:
+
+WHATSAPP
+INSTAGRAM
+TIKTOK
+FACEBOOK
+WEBSITE
+EMAIL
+MAP
+
+============================================================
+24. PRINSIP ANTI-HARDCODE
+============================================================
+
+Informasi yang dapat berubah karena kebijakan BUMDes
+TIDAK BOLEH di-hardcode pada frontend.
+
+Yang harus configurable:
+
+- Nama bank
+- Nomor rekening
+- Nama pemilik rekening
+- QRIS
+- WhatsApp
+- Instagram
+- TikTok
+- Facebook
+- Website
+- Email
+- Lokasi
+- Tarif
+- Jatuh tempo
+- RW
+- RT
+- Kategori
+- Template pesan
+- Pengguna
+- Permission
+
+============================================================
+25. DATA PELANGGAN
+============================================================
+
+Field minimal:
+
+- ID pelanggan
+- Nama
+- Nomor HP/WhatsApp
+- Alamat
+- Status
+- PIN hash
+- Status PIN default
+
+Nomor HP boleh kosong.
+
+============================================================
+26. ID PELANGGAN
+============================================================
+
+ID dibuat otomatis.
+
+Format:
+
+PLG-RW03-0025
+
+Format harus fleksibel mengikuti RW.
+
+Contoh:
+
+PLG-RW01-0001
+PLG-RW02-0015
+PLG-RW07-0042
+
+Jika RW bertambah:
+RW08, RW09, dan seterusnya dapat digunakan.
+
+ID harus unik.
+
+Generate dilakukan server-side.
+
+============================================================
+27. WILAYAH RW
+============================================================
+
+Wilayah awal:
+
+RW 01
+RW 02
+RW 03
+RW 04
+RW 05
+RW 06
+RW 07
+
+RW harus dinamis.
+
+Super Admin dapat menambah RW baru tanpa mengubah kode.
+
+============================================================
+28. WILAYAH RT
+============================================================
+
+RT wajib digunakan.
+
+Setiap layanan pelanggan memiliki:
+
+- RW
+- RT
+
+RT harus dapat dikonfigurasi.
+
+============================================================
+29. KATEGORI PELANGGAN
+============================================================
+
+Kategori awal:
+
+- Rumah Tangga
+- UMKM
+- Perusahaan
+
+Kategori dapat ditambah oleh Super Admin.
+
+============================================================
+30. TARIF
+============================================================
+
+Tarif berbeda berdasarkan kategori.
+
+Contoh:
+
+Rumah Tangga:
+Rp20.000
+
+UMKM:
+Rp35.000
+
+Perusahaan:
+Rp100.000
+
+Nominal tersebut hanya contoh dan harus dapat diubah
+oleh Super Admin.
+
+============================================================
+31. HISTORI TARIF
+============================================================
+
+Tarif memiliki periode berlaku.
+
+Contoh:
+
+Januari-Juni:
+Rp20.000
+
+Juli-Desember:
+Rp25.000
+
+Perubahan tarif tidak boleh mengubah transaksi lama.
+
+============================================================
+32. MULTI SERVICE / MULTI LOKASI
+============================================================
+
+Satu pelanggan dapat memiliki lebih dari satu layanan.
+
+Contoh:
+
+Budi Santoso
+
+Akun:
+PLG-RW03-0025
+
+Lokasi 1:
+Rumah
+
+Lokasi 2:
+Toko
+
+Pelanggan tidak perlu membuat dua akun.
+
+Satu login menampilkan semua layanan.
+
+============================================================
+33. SERVICE LOCATION
+============================================================
+
+Setiap lokasi layanan memiliki:
+
+- Service ID
+- Nama objek
+- Alamat
+- RW
+- RT
+- Kategori
+- Tarif
+- Latitude
+- Longitude
+- Status
+- Tanggal mulai
+- Tanggal berakhir jika berhenti
+
+Contoh:
+
+LYN-RW03-0025-01
+Rumah
+
+LYN-RW03-0025-02
+Toko
+
+============================================================
+34. GPS
+============================================================
+
+GPS bersifat opsional.
+
+Field:
+
+latitude
+longitude
+
+Admin dapat memasukkan koordinat saat:
+- Import
+- Tambah layanan
+- Edit layanan
+
+============================================================
+35. PETA SEBARAN
+============================================================
+
+Admin/Super Admin dapat melihat peta pelanggan.
+
+Filter:
+
+- RW
+- RT
+- Kategori
+- Status layanan
+
+Peta menampilkan lokasi layanan.
+
+GPS yang belum tersedia tidak boleh menghambat pelanggan.
+
+============================================================
+36. TAGIHAN BULANAN
+============================================================
+
+Setiap service aktif memiliki tagihan bulanan.
+
+Field:
+
+- Service ID
+- Tahun
+- Bulan
+- Nominal
+- Jatuh tempo
+- Status
+
+Constraint:
+
+UNIQUE(service_id, billing_year, billing_month)
+
+============================================================
+37. JATUH TEMPO
+============================================================
+
+Default:
+
+Tanggal 10
+
+Jatuh tempo dapat diubah oleh Super Admin.
+
+Jika kebijakan berubah:
+Tanggal 10 -> tanggal 15
+
+maka sistem menggunakan tanggal konfigurasi terbaru.
+
+============================================================
+38. STATUS TAGIHAN
+============================================================
+
+UNPAID
+PENDING_VERIFICATION
+PAID
+OVERDUE
+REJECTED
+
+Jika melewati tanggal jatuh tempo dan belum lunas:
+
+OVERDUE
+
+Tampilkan secara visual sebagai:
+MERAH / WARNING.
+
+============================================================
+39. TUNGGAKAN
+============================================================
+
+Sistem otomatis mendeteksi tagihan yang:
+
+tanggal sekarang > due_date
+DAN status belum PAID
+
+Tagihan menjadi:
+
+OVERDUE
+
+Dashboard admin harus menampilkan:
+
+- Jumlah pelanggan menunggak.
+- Jumlah bulan menunggak.
+- Total nominal tunggakan.
+
+============================================================
+40. DASHBOARD TUNGGAKAN
+============================================================
+
+Judul:
+
+Daftar Pelanggan Menunggak
+
+Subjudul:
+
+Sistem otomatis mendeteksi tagihan yang melewati batas
+jatuh tempo dan belum lunas.
+
+Kolom:
+
+- ID Pelanggan
+- Nama Warga
+- No HP / WhatsApp
+- Alamat
+- Bulan Belum Lunas
+- Total Nominal Tunggakan
+- Terakhir Diingatkan
+- Tindakan
+
+Contoh:
+
+Budi Santoso
+2 bulan
+Rp70.000
+[Ingatkan WA]
+
+============================================================
+41. FITUR WHATSAPP REMINDER
+============================================================
+
+Admin/Petugas yang memiliki permission dapat menekan:
+
+[ Ingatkan WA ]
+
+Fungsi:
+Membuat pesan pengingat berdasarkan data tunggakan
+pelanggan secara otomatis.
+
+============================================================
+42. MEKANISME WHATSAPP MVP
+============================================================
+
+JANGAN mengirim WhatsApp otomatis dari server pada MVP.
+
+Alur:
+
+Admin
+-> Klik Ingatkan WA
+-> RESIK mengambil data tunggakan
+-> RESIK menghitung total
+-> RESIK mengambil template
+-> RESIK membuat pesan
+-> Preview pesan
+-> Admin klik Buka WhatsApp
+-> WhatsApp terbuka
+-> Pesan sudah terisi
+-> Admin sendiri menekan Kirim
+
+Alasan:
+- Lebih sederhana.
+- Tidak membutuhkan WhatsApp API.
+- Tidak membutuhkan biaya API.
+- Admin dapat mengecek pesan.
+- Mengurangi risiko salah penerima.
+
+============================================================
+43. PREVIEW WHATSAPP REMINDER
+============================================================
+
+Saat klik "Ingatkan WA":
+
+Tampilkan:
+
+Nama:
+Budi Santoso
+
+Nomor:
+081234567890
+
+Tunggakan:
+
+Agustus - Rumah - Rp20.000
+September - Rumah - Rp20.000
+Oktober - Toko - Rp30.000
+
+Total:
+Rp70.000
+
+Pesan:
+
+Halo Bapak/Ibu Budi Santoso 👋
+
+Kami dari BUMDes Makmur Gedangan ingin mengingatkan
+bahwa terdapat iuran layanan persampahan yang belum
+tercatat lunas.
+
+Total tunggakan: Rp70.000
+
+Mohon dapat melakukan pembayaran.
+Jika sudah melakukan pembayaran, silakan abaikan
+pesan ini atau hubungi BUMDes.
+
+Terima kasih.
+
+RESIK - BUMDes Makmur Gedangan
+
+Tombol:
+
+[Batal]
+[Buka WhatsApp]
+
+============================================================
+44. BAHASA REMINDER
+============================================================
+
+Gunakan bahasa yang sopan.
+
+Jangan menggunakan:
+"Anda belum membayar."
+
+Gunakan:
+"iuran belum tercatat lunas."
+
+Tujuan:
+Mengantisipasi pembayaran yang baru dilakukan atau
+masih menunggu verifikasi.
+
+============================================================
+45. MULTI SERVICE PADA REMINDER
+============================================================
+
+Jika pelanggan mempunyai rumah dan toko, semua tunggakan
+digabung dalam satu reminder.
+
+Contoh:
+
+Rumah - Oktober: Rp20.000
+Toko - September: Rp35.000
+Toko - Oktober: Rp35.000
+
+Total: Rp90.000
+
+Pelanggan tidak menerima reminder terpisah untuk setiap
+lokasi layanan.
+
+============================================================
+46. NOMOR WHATSAPP KOSONG
+============================================================
+
+Jika nomor HP/WhatsApp pelanggan kosong:
+
+Jangan tampilkan tombol "Ingatkan WA".
+
+Tampilkan indikator:
+
+"Tidak ada nomor WhatsApp"
+
+============================================================
+47. FORMAT NOMOR WHATSAPP
+============================================================
+
+Nomor disimpan sebagai TEXT.
+
+Contoh:
+
+081234567890
+
+Saat membuat URL:
+6281234567890
+
+URL:
+
+https://wa.me/6281234567890?text=...
+
+============================================================
+48. TERAKHIR DIINGATKAN
+============================================================
+
+Tampilkan:
+
+Terakhir Diingatkan
+
+Contoh:
+8 Oktober 2026, 09:43
+
+Jika belum:
+Belum pernah
+
+Field:
+
+last_reminded_at
+last_reminded_by
+
+============================================================
+49. PERINGATAN REMINDER BERULANG
+============================================================
+
+Jika pelanggan baru saja diingatkan:
+
+Tampilkan:
+
+"⚠️ Pelanggan ini sudah diingatkan 1 hari yang lalu."
+
+Admin tetap dapat melanjutkan jika diperlukan.
+
+Tujuan:
+Mencegah salah klik dan spam.
+
+============================================================
+50. BULK REMINDER
+============================================================
+
+Admin dapat memilih beberapa pelanggan:
+
+☑ Budi
+☑ Sri
+☐ Joko
+☑ Siti
+
+Kemudian:
+
+"3 pesan WhatsApp siap dibuat."
+
+MVP TIDAK melakukan auto-send massal.
+
+Setiap WhatsApp tetap dibuka secara individual.
+
+============================================================
+51. FILTER TUNGGAKAN
+============================================================
+
+Filter:
+
+- RW
+- RT
+- Kategori
+- Jumlah bulan tunggakan
+- Nominal tunggakan
+- Memiliki WhatsApp
+- Belum pernah diingatkan
+- Sudah pernah diingatkan
+
+============================================================
+52. DASHBOARD REMINDER
+============================================================
+
+Tampilkan:
+
+Pelanggan Menunggak:
+32
+
+Total Tunggakan:
+Rp1.250.000
+
+Sudah Dibuka Pengingat:
+21
+
+Belum Diingatkan:
+11
+
+Memiliki Nomor WhatsApp:
+28
+
+============================================================
+53. STATUS WHATSAPP REMINDER
+============================================================
+
+Karena MVP menggunakan wa.me, sistem TIDAK boleh mengklaim
+pesan benar-benar sudah terkirim.
+
+Status:
+
+PREPARED
+OPENED
+
+Jika di masa depan menggunakan WhatsApp API:
+
+SENT
+DELIVERED
+READ
+FAILED
+
+============================================================
+54. LOG WHATSAPP
+============================================================
+
+Simpan:
+
+- Customer ID
+- User yang membuat reminder
+- Waktu
+- Total tunggakan saat dibuat
+- Pesan/template
+- Status PREPARED/OPENED
+
+============================================================
+55. PAYMENT METHOD
+============================================================
+
+MVP mendukung:
+
+1. TUNAI
+2. TRANSFER BANK
+3. QRIS
+
+Payment Gateway belum digunakan pada MVP.
+
+============================================================
+56. PEMBAYARAN TUNAI
+============================================================
+
+Alur:
+
+Petugas/Admin
+-> Cari pelanggan
+-> Pilih layanan
+-> Pilih periode
+-> Catat pembayaran
+-> Confirm
+-> Status PAID
+-> Generate bukti pembayaran
+
+============================================================
+57. PEMBAYARAN TRANSFER
+============================================================
+
+Alur:
+
+Pelanggan
+-> Pilih tagihan
+-> Pilih Transfer
+-> Lihat rekening aktif
+-> Copy nomor rekening
+-> Transfer melalui mobile banking
+-> Upload bukti
+-> Status PENDING_VERIFICATION
+
+Admin:
+-> Periksa
+-> Setujui atau Tolak
+
+Jika disetujui:
+-> PAID
+-> Generate bukti pembayaran
+
+============================================================
+58. PEMBAYARAN QRIS
+============================================================
+
+Alur:
+
+Pelanggan
+-> Pilih QRIS
+-> Lihat QRIS BUMDes
+-> Scan
+-> Bayar
+-> Upload bukti
+-> PENDING_VERIFICATION
+
+Admin:
+-> Verifikasi
+-> Setujui/Tolak
+
+============================================================
+59. PAYMENT GATEWAY
+============================================================
+
+TIDAK termasuk MVP.
+
+Roadmap:
+- QRIS otomatis
+- Virtual Account
+- E-wallet
+- Payment gateway
+- Rekonsiliasi otomatis
+- Callback pembayaran
+- Notifikasi otomatis
+
+============================================================
+60. REKENING BANK BUMDES
+============================================================
+
+Nama bank dan rekening TIDAK boleh hardcoded.
+
+Super Admin dapat:
+
+- Menambah rekening.
+- Mengubah rekening.
+- Menonaktifkan rekening.
+- Mengatur urutan.
+
+Field:
+
+- Nama Bank
+- Nomor Rekening
+- Atas Nama
+- Keterangan
+- Status
+- Urutan
+
+============================================================
+61. CONTOH TAMPILAN REKENING
+============================================================
+
+Rekening Pembayaran
+
+🏦 Bank Jateng
+
+1234567890                  [📋 Salin]
+
+a.n. BUMDes Makmur Gedangan
+
+Jika terdapat beberapa rekening:
+
+🏦 BRI
+9876543210                  [📋 Salin]
+a.n. BUMDes Makmur Gedangan
+
+============================================================
+62. COPY NOMOR REKENING
+============================================================
+
+Setiap nomor rekening harus memiliki tombol:
+
+[📋 Salin]
+
+Saat diklik:
+- Nomor disalin ke clipboard.
+- Tampilkan "Nomor rekening berhasil disalin".
+- Tombol dapat berubah menjadi "✓ Tersalin".
+
+Harus bekerja pada browser smartphone.
+
+Gunakan Clipboard API.
+
+============================================================
+63. NOMOR REKENING HARUS TEXT
+============================================================
+
+Nomor rekening disimpan sebagai TEXT, bukan INTEGER.
+
+Alasan:
+
+Nomor seperti:
+001234567890
+
+tidak boleh berubah menjadi:
+1234567890
+
+Angka nol di depan harus dipertahankan.
+
+============================================================
+64. DATABASE BANK ACCOUNTS
+============================================================
+
+TABLE: bank_accounts
+
+id UUID PK
+bank_name TEXT
+account_number TEXT
+account_name TEXT
+description TEXT NULL
+is_active BOOLEAN
+sort_order INTEGER
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+created_by UUID
+updated_by UUID
+
+============================================================
+65. HUBUNGAN REKENING DENGAN PEMBAYARAN
+============================================================
+
+TABLE payments memiliki:
+
+bank_account_id UUID NULL
+
+Jika transfer:
+bank_account_id diisi.
+
+Jika:
+- Tunai
+- QRIS
+- Pembayaran kantor
+
+bank_account_id dapat NULL.
+
+Histori pembayaran harus tetap menyimpan rekening tujuan
+yang digunakan pada saat transaksi.
+
+============================================================
+66. QRIS
+============================================================
+
+QRIS disimpan oleh Super Admin.
+
+Menu:
+
+Pengaturan -> QRIS
+
+Super Admin dapat:
+- Upload QRIS.
+- Mengganti QRIS.
+- Mengaktifkan/nonaktifkan QRIS.
+- Menambahkan keterangan.
+
+QRIS MVP bersifat manual.
+
+============================================================
+67. BUKTI PEMBAYARAN DIGITAL
+============================================================
+
+Setiap pembayaran yang confirmed menghasilkan bukti.
+
+Contoh:
+
+RESIK
+Retribusi Elektronik & Sistem Informasi Kebersihan
+
+BUKTI PEMBAYARAN
+
+No. Bukti:
+RESIK/2026/10/000125
+
+Nama:
+Budi Santoso
+
+ID:
+PLG-RW03-0025
+
+Layanan:
+Rumah
+
+Periode:
+Oktober 2026
+
+Nominal:
+Rp20.000
+
+Metode:
+Transfer
+
+Status:
+LUNAS
+
+BUMDes Makmur Gedangan
+
+============================================================
+68. RECEIPT NUMBER
+============================================================
+
+Format:
+
+RESIK/YYYY/MM/XXXXXX
+
+Harus unik.
+
+Generate server-side.
+
+============================================================
+69. PAYMENT HISTORY
+============================================================
+
+Pelanggan dapat melihat:
+
+- Periode
+- Layanan
+- Nominal
+- Metode pembayaran
+- Tanggal pembayaran
+- Status
+- Bukti pembayaran
+
+============================================================
+70. PAYMENT VERIFICATION
+============================================================
+
+Admin melihat:
+
+- Pelanggan
+- ID
+- Layanan
+- Periode
+- Nominal
+- Metode
+- Rekening tujuan
+- Bukti pembayaran
+- Waktu upload
+
+Aksi:
+
+[Setujui]
+[Tolak]
+
+Jika ditolak:
+Admin harus memberikan alasan penolakan.
+
+============================================================
+71. BROADCAST
+============================================================
+
+Broadcast dapat dikirim oleh:
+
+- Super Admin
+- Admin
+- Petugas jika memiliki permission
+
+Target:
+
+- Semua pelanggan
+- RW tertentu
+- RT tertentu
+- Kategori tertentu
+- Pelanggan tertentu
+
+============================================================
+72. BROADCAST RECIPIENT
+============================================================
+
+Simpan:
+
+- Pengirim
+- Waktu
+- Judul
+- Pesan
+- Target
+- Recipient
+- Read status
+
+Pelanggan dapat membaca broadcast dari dashboard.
+
+============================================================
+73. IMPORT DATA
+============================================================
+
+Mendukung:
+
+.xlsx
+.xls
+.csv
+
+Template Excel resmi RESIK harus dapat di-download.
+
+============================================================
+74. TEMPLATE IMPORT
+============================================================
+
+Kolom:
+
+Nama Pelanggan
+No HP
+Alamat
+RT
+RW
+Kategori
+Nama Objek
+Tarif
+Latitude
+Longitude
+
+============================================================
+75. IMPORT MAPPING
+============================================================
+
+Admin dapat memetakan kolom spreadsheet lama.
+
+Contoh:
+
+Nama Warga -> Nama Pelanggan
+No Telp -> No HP
+Wilayah -> RW
+Jenis -> Kategori
+
+============================================================
+76. IMPORT VALIDATION
+============================================================
+
+Validasi:
+
+- Nama wajib.
+- RW valid.
+- RT valid.
+- Kategori valid.
+- Tarif valid.
+- Duplikasi.
+- Format nomor HP.
+- Latitude.
+- Longitude.
+
+Import tidak boleh langsung masuk tanpa validasi.
+
+Alur:
+
+Upload
+-> Mapping
+-> Preview
+-> Validate
+-> Import
+-> Result
+
+============================================================
+77. IMPORT RESULT
+============================================================
+
+Setelah import:
+
+Tampilkan:
+
+Total data:
+250
+
+Berhasil:
+242
+
+Gagal:
+8
+
+Admin dapat melihat daftar error.
+
+============================================================
+78. AUTO GENERATE DATA
+============================================================
+
+Setelah pelanggan berhasil diimport:
+
+- ID Pelanggan dibuat.
+- Service ID dibuat.
+- PIN awal dibuat.
+- Relasi RW/RT dibuat.
+- Tarif diterapkan.
+
+============================================================
+79. LAPORAN
+============================================================
+
+Laporan:
+
+1. Laporan Pembayaran
+2. Laporan Tunggakan
+3. Laporan Pendapatan
+4. Laporan Pelanggan
+5. Laporan RW
+6. Laporan RT
+7. Laporan Kategori
+8. Laporan Metode Pembayaran
+9. Laporan Verifikasi
+10. Laporan Reminder WhatsApp
+11. Laporan Broadcast
+
+============================================================
+80. LAPORAN REMINDER WHATSAPP
+============================================================
+
+Tampilkan:
+
+- Pelanggan yang diingatkan.
+- Admin/petugas.
+- Waktu.
+- Total tunggakan.
+- Status PREPARED/OPENED.
+
+Jangan menyebut "terkirim" pada MVP karena sistem tidak
+mengetahui apakah user benar-benar menekan Send di WhatsApp.
+
+============================================================
+81. DASHBOARD ADMIN
+============================================================
+
+Dashboard minimal menampilkan:
+
+Pelanggan Aktif
+Sudah Bayar
+Belum Bayar
+Menunggu Verifikasi
+Pelanggan Menunggak
+Total Tunggakan
+Pendapatan Bulan Ini
+
+Contoh:
+
+Pelanggan Aktif:
+247
+
+Sudah Bayar:
+198
+
+Belum Bayar:
+49
+
+Menunggu Verifikasi:
+1
+
+Tunggakan:
+32
+
+Total Tunggakan:
+Rp1.250.000
+
+Pendapatan Bulan Ini:
+Rp4.850.000
+
+============================================================
+82. ALERT VERIFIKASI
+============================================================
+
+Jika ada pembayaran Transfer/QRIS:
+
+Tampilkan banner:
+
+"Terdapat 1 Pembayaran Transfer/QRIS Menunggu Verifikasi"
+
+Tombol:
+
+[Periksa Sekarang ->]
+
+============================================================
+83. DASHBOARD TUNGGAKAN
+============================================================
+
+Tampilkan daftar pelanggan menunggak secara langsung.
+
+Quick action:
+
+[Ingatkan WA]
+
+Tujuan:
+Admin tidak perlu membuka banyak halaman untuk mengingatkan
+pelanggan.
+
+============================================================
+84. CUSTOMER DASHBOARD
+============================================================
+
+Setelah login pelanggan melihat:
+
+- Salam/nama pelanggan.
+- ID pelanggan.
+- Semua lokasi layanan.
+- Tagihan bulan berjalan.
+- Status pembayaran.
+- Total tunggakan.
+- Tombol bayar.
+- Histori.
+- Broadcast.
+
+============================================================
+85. MULTI SERVICE CUSTOMER DASHBOARD
+============================================================
+
+Contoh:
+
+Budi Santoso
+
+PLG-RW03-0025
+
+Layanan:
+
+🏠 Rumah
+Status: LUNAS
+
+🏪 Toko
+Status: BELUM BAYAR
+
+Jika satu layanan menunggak, pelanggan dapat melihat
+detail lokasi tersebut.
+
+============================================================
+86. PENGATURAN BUMDES
+============================================================
+
+Menu:
+
+PENGATURAN
+
+1. Profil BUMDes
+2. Kontak & Media Sosial
+3. Rekening Pembayaran
+4. QRIS
+5. Wilayah
+6. Kategori
+7. Tarif
+8. Jatuh Tempo
+9. Template Pesan
+10. Pengguna & Akses
+
+============================================================
+87. PROFIL BUMDES
+============================================================
+
+Super Admin dapat mengatur:
+
+- Nama BUMDes
+- Logo
+- Alamat
+- Deskripsi
+- Nomor WhatsApp
+- Email
+- Website
+
+============================================================
+88. TEMPLATE PESAN
+============================================================
+
+Menu:
+
+Pengaturan -> Template Pesan
+
+Jenis:
+
+WHATSAPP_OVERDUE_REMINDER
+
+Template dapat menggunakan:
+
+{nama}
+{id_pelanggan}
+{periode}
+{total_tunggakan}
+{jumlah_tunggakan}
+{nama_bumdes}
+{nomor_bumdes}
+
+Contoh:
+
+Halo {nama} 👋
+
+Kami dari {nama_bumdes} ingin mengingatkan bahwa
+terdapat iuran layanan persampahan yang belum
+tercatat lunas.
+
+Total tunggakan: {total_tunggakan}
+
+Jika sudah melakukan pembayaran, silakan abaikan
+pesan ini.
+
+Terima kasih.
+
+============================================================
+89. DATABASE MESSAGE TEMPLATES
+============================================================
+
+TABLE: message_templates
+
+id UUID PK
+type TEXT
+name TEXT
+content TEXT
+is_active BOOLEAN
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+updated_by UUID
+
+============================================================
+90. DATABASE CUSTOMERS
+============================================================
+
+TABLE: customers
+
+id UUID PK
+customer_code TEXT UNIQUE
+name TEXT
+phone TEXT NULL
+address TEXT
+pin_hash TEXT
+is_default_pin BOOLEAN
+status TEXT
+last_reminded_at TIMESTAMPTZ NULL
+last_reminded_by UUID NULL
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+
+============================================================
+91. DATABASE SERVICE LOCATIONS
+============================================================
+
+TABLE: service_locations
+
+id UUID PK
+customer_id UUID FK
+service_code TEXT UNIQUE
+name TEXT
+address TEXT
+rt TEXT
+rw TEXT
+category_id UUID FK
+tariff_id UUID FK
+latitude NUMERIC NULL
+longitude NUMERIC NULL
+status TEXT
+start_date DATE
+end_date DATE NULL
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+
+============================================================
+92. DATABASE REGIONS
+============================================================
+
+TABLE: regions
+
+id UUID PK
+rw_code TEXT
+rt_code TEXT
+name TEXT NULL
+status TEXT
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+
+============================================================
+93. DATABASE CATEGORIES
+============================================================
+
+TABLE: categories
+
+id UUID PK
+name TEXT
+description TEXT
+status TEXT
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+
+============================================================
+94. DATABASE TARIFFS
+============================================================
+
+TABLE: tariffs
+
+id UUID PK
+category_id UUID FK
+amount NUMERIC
+effective_from DATE
+effective_until DATE NULL
+status TEXT
+created_at TIMESTAMPTZ
+
+============================================================
+95. DATABASE BILLS
+============================================================
+
+TABLE: bills
+
+id UUID PK
+service_id UUID FK
+billing_year INTEGER
+billing_month INTEGER
+amount NUMERIC
+due_date DATE
+status TEXT
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+
+CONSTRAINT:
+
+UNIQUE(service_id, billing_year, billing_month)
+
+============================================================
+96. DATABASE PAYMENTS
+============================================================
+
+TABLE: payments
+
+id UUID PK
+bill_id UUID FK
+amount NUMERIC
+payment_method TEXT
+bank_account_id UUID NULL
+payment_date TIMESTAMPTZ
+status TEXT
+recorded_by UUID
+verified_by UUID NULL
+verified_at TIMESTAMPTZ NULL
+notes TEXT NULL
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+
+PAYMENT METHODS:
+
+PETUGAS
+KANTOR
+TRANSFER
+QRIS
+
+============================================================
+97. DATABASE BANK ACCOUNTS
+============================================================
+
+TABLE: bank_accounts
+
+id UUID PK
+bank_name TEXT
+account_number TEXT
+account_name TEXT
+description TEXT NULL
+is_active BOOLEAN
+sort_order INTEGER
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+created_by UUID
+updated_by UUID
+
+============================================================
+98. DATABASE ROLES
+============================================================
+
+TABLE: roles
+
+id UUID PK
+name TEXT UNIQUE
+description TEXT
+
+============================================================
+99. DATABASE PERMISSIONS
+============================================================
+
+TABLE: permissions
+
+id UUID PK
+code TEXT UNIQUE
+name TEXT
+description TEXT
+
+============================================================
+100. DATABASE ROLE PERMISSIONS
+============================================================
+
+TABLE: role_permissions
+
+role_id UUID FK
+permission_id UUID FK
+
+============================================================
+101. DATABASE USER ROLES
+============================================================
+
+TABLE: user_roles
+
+user_id UUID FK
+role_id UUID FK
+
+============================================================
+102. DATABASE BROADCASTS
+============================================================
+
+TABLE: broadcasts
+
+id UUID PK
+title TEXT
+message TEXT
+created_by UUID
+created_at TIMESTAMPTZ
+target_type TEXT
+target_filter JSONB
+status TEXT
+
+============================================================
+103. DATABASE BROADCAST RECIPIENTS
+============================================================
+
+TABLE: broadcast_recipients
+
+id UUID PK
+broadcast_id UUID FK
+customer_id UUID FK
+read_at TIMESTAMPTZ NULL
+
+============================================================
+104. DATABASE ORGANIZATION LINKS
+============================================================
+
+TABLE: organization_links
+
+id UUID PK
+type TEXT
+label TEXT
+url TEXT
+icon TEXT
+sort_order INTEGER
+is_active BOOLEAN
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+updated_by UUID
+
+============================================================
+105. DATABASE MESSAGE TEMPLATES
+============================================================
+
+TABLE: message_templates
+
+id UUID PK
+type TEXT
+name TEXT
+content TEXT
+is_active BOOLEAN
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+updated_by UUID
+
+============================================================
+106. DATABASE IMPORTS
+============================================================
+
+TABLE: imports
+
+id UUID PK
+file_name TEXT
+uploaded_by UUID
+total_rows INTEGER
+success_rows INTEGER
+failed_rows INTEGER
+status TEXT
+created_at TIMESTAMPTZ
+completed_at TIMESTAMPTZ
+
+============================================================
+107. DATABASE IMPORT ERRORS
+============================================================
+
+TABLE: import_errors
+
+id UUID PK
+import_id UUID FK
+row_number INTEGER
+field_name TEXT
+error_message TEXT
+raw_data JSONB
+created_at TIMESTAMPTZ
+
+============================================================
+108. DATABASE AUDIT LOGS
+============================================================
+
+TABLE: audit_logs
+
+id UUID PK
+user_id UUID
+action TEXT
+entity_type TEXT
+entity_id UUID NULL
+old_data JSONB NULL
+new_data JSONB NULL
+metadata JSONB NULL
+created_at TIMESTAMPTZ
+
+============================================================
+109. SUPABASE STORAGE
+============================================================
+
+Bucket:
+
+payment-proofs
+branding
+documents
+
+payment-proofs harus PRIVATE.
+
+Bukti pembayaran hanya dapat diakses oleh user yang
+berhak melalui signed URL.
+
+============================================================
+110. SUPABASE AUTH
+============================================================
+
+Supabase Auth digunakan untuk:
+
+- Super Admin
+- Admin
+- Petugas
+
+Customer menggunakan mekanisme ID + PIN yang diproses
+secara aman melalui server-side/Edge Function.
+
+============================================================
+111. ROW LEVEL SECURITY
+============================================================
+
+RLS WAJIB digunakan.
+
+Customer:
+Hanya dapat melihat data miliknya.
+
+Admin:
+Sesuai permission.
+
+Petugas:
+Sesuai permission.
+
+Super Admin:
+Full access.
+
+Jangan mengandalkan pengecekan role hanya di frontend.
+
+============================================================
+112. SECURITY
+============================================================
+
+Wajib:
+
+- HTTPS
+- Supabase RLS
+- PIN hashing
+- Private Storage
+- Signed URLs
+- Permission validation
+- Rate limiting login
+- Audit logs
+- Database backup
+- Secure secrets
+- Service Role Key tidak boleh berada di frontend
+
+============================================================
+113. CUSTOMER PIN SECURITY
+============================================================
+
+Karena PIN hanya 4 digit:
+
+- Batasi percobaan login.
+- Tambahkan cooldown.
+- Catat login gagal.
+- Hash PIN.
+- Jangan simpan PIN plaintext.
+- Wajibkan penggantian PIN default.
+
+============================================================
+114. EDGE FUNCTIONS
+============================================================
+
+Gunakan Edge Functions untuk:
+
+customer-login
+reset-customer-pin
+generate-customer-code
+generate-service-code
+generate-receipt
+confirm-payment
+import-customers
+generate-whatsapp-reminder
+
+Jika diperlukan:
+
+scheduled-billing-generation
+overdue-detection
+
+============================================================
+115. WHATSAPP TECHNICAL FLOW
+============================================================
+
+Admin
+  |
+  v
+Klik "Ingatkan WA"
+  |
+  v
+Query overdue bills
+  |
+  v
+Aggregate berdasarkan customer
+  |
+  v
+Hitung total tunggakan
+  |
+  v
+Ambil template
+  |
+  v
+Replace variables
+  |
+  v
+Generate wa.me URL
+  |
+  v
+Preview
+  |
+  v
+Buka WhatsApp
+  |
+  v
+Admin menekan Send
+
+============================================================
+116. AUTOMATIC OVERDUE DETECTION
+============================================================
+
+Sistem harus menentukan:
+
+IF current_date > due_date
+AND bill.status != PAID
+
+THEN status = OVERDUE
+
+Overdue harus dapat terlihat pada:
+- Dashboard Admin
+- Dashboard Customer
+- Daftar Tunggakan
+- Laporan
+
+============================================================
+117. CUSTOMER PAYMENT STATUS
+============================================================
+
+Pelanggan harus dapat mengetahui:
+
+- LUNAS
+- BELUM BAYAR
+- MENUNGGU VERIFIKASI
+- DITOLAK
+- TUNGGAKAN
+
+Status harus mudah dipahami secara visual.
+
+Gunakan:
+- Hijau untuk Lunas.
+- Kuning untuk Menunggu.
+- Merah untuk Tunggakan.
+- Abu/neutral untuk belum bayar jika diperlukan.
+
+============================================================
+118. NO DOUBLE BILL
+============================================================
+
+Sistem tidak boleh membuat dua tagihan untuk:
+
+service + periode yang sama.
+
+Gunakan unique constraint:
+
+service_id + billing_year + billing_month
+
+============================================================
+119. NO DOUBLE PAYMENT
+============================================================
+
+Sistem harus mencegah pembayaran ganda untuk tagihan
+yang sama tanpa konfirmasi khusus.
+
+Jika bill sudah PAID:
+Jangan tampilkan sebagai tagihan aktif.
+
+============================================================
+120. CUSTOMER COMMUNICATION
+============================================================
+
+Pelanggan mendapatkan:
+
+1. Informasi tagihan.
+2. Informasi pembayaran.
+3. Bukti pembayaran.
+4. Broadcast.
+5. Informasi kontak BUMDes.
+6. Pengingat melalui WhatsApp dari admin jika menunggak.
+
+============================================================
+121. LOGIN PAGE FINAL LAYOUT
+============================================================
+
+LOGO RESIK
+
+RESIK
+Retribusi Elektronik & Sistem Informasi Kebersihan
+
+🌐 Website BUMDes Makmur Gedangan
+
+[ ID Pelanggan ]
+
+[ PIN                         👁 ]
+
+[ MASUK KE LAYANAN ]
+
+Lupa PIN atau butuh bantuan?
+
+[ 🟢 Hubungi WhatsApp BUMDes ]
+
+MEDIA SOSIAL RESMI BUMDES
+
+[ Instagram ] [ TikTok ] [ Facebook ]
+[ Website ] [ Email ] [ Lokasi ]
+
+Jumlah ikon otomatis mengikuti konfigurasi Super Admin.
+
+============================================================
+122. CUSTOMER PAYMENT PAGE
+============================================================
+
+Tampilkan:
+
+Tagihan Bulan Ini
+
+Layanan:
+Rumah
+
+Periode:
+Oktober 2026
+
+Nominal:
+Rp20.000
+
+Jatuh Tempo:
+10 Oktober 2026
+
+Metode:
+
+[ Tunai ]
+[ Transfer Bank ]
+[ QRIS ]
+
+============================================================
+123. TRANSFER PAYMENT UI
+============================================================
+
+Tampilkan:
+
+Rekening Pembayaran
+
+🏦 Bank Jateng
+
+1234567890 [📋 Salin]
+
+a.n. BUMDes Makmur Gedangan
+
+[ Upload Bukti Pembayaran ]
+
+============================================================
+124. QRIS PAYMENT UI
+============================================================
+
+Tampilkan QRIS aktif:
+
+[ QR CODE ]
+
+Petunjuk:
+
+1. Buka mobile banking/e-wallet.
+2. Scan QRIS.
+3. Pastikan nominal benar.
+4. Selesaikan pembayaran.
+5. Upload bukti pembayaran.
+
+[ Upload Bukti Pembayaran ]
+
+============================================================
+125. ADMIN PAYMENT VERIFICATION UI
+============================================================
+
+Tampilkan:
+
+Pembayaran Menunggu Verifikasi
+
+Nama
+ID Pelanggan
+Lokasi
+Periode
+Nominal
+Metode
+Rekening Tujuan
+Bukti Pembayaran
+
+[ Lihat Bukti ]
+
+[ ✓ Setujui ]
+
+[ ✕ Tolak ]
+
+Jika tolak:
+Masukkan alasan.
+
+============================================================
+126. ADMIN TUNGGAKAN UI
+============================================================
+
+Contoh:
+
+DAFTAR PELANGGAN MENUNGGAK
+
+Sistem otomatis mendeteksi tagihan yang melewati
+batas jatuh tempo dan belum lunas.
+
+Total Tunggakan: Rp130.000
+
+ID          NAMA        WA          TUNGGAKAN     AKSI
+
+PLG-RW03    Budi        0812...     Rp70.000      [Ingatkan WA]
+PLG-RW02    Sri         0813...     Rp40.000      [Ingatkan WA]
+PLG-RW01    Joko        0857...     Rp20.000      [Ingatkan WA]
+
+============================================================
+127. AUDIT LOG
+============================================================
+
+Catat aktivitas penting:
+
+- Login
+- Logout
+- Login gagal
+- Tambah pelanggan
+- Edit pelanggan
+- Nonaktifkan pelanggan
+- Tambah layanan
+- Edit layanan
+- Pembayaran
+- Verifikasi
+- Penolakan pembayaran
+- Reset PIN
+- Import
+- Export
+- Broadcast
+- WhatsApp reminder
+- Tambah rekening
+- Edit rekening
+- Nonaktifkan rekening
+- Perubahan tarif
+- Perubahan jatuh tempo
+- Perubahan permission
+- Tambah pengguna
+- Perubahan role
+- Perubahan konfigurasi
+
+============================================================
+128. AUDIT LOG WHATSAPP
+============================================================
+
+Contoh:
+
+8 Oktober 2026 09:43
+
+Admin:
+Budi Prasetyo
+
+Action:
+WHATSAPP_REMINDER_OPENED
+
+Customer:
+Budi Santoso
+
+Total Tunggakan:
+Rp70.000
+
+Status:
+OPENED
+
+============================================================
+129. AUDIT LOG REKENING
+============================================================
+
+Contoh:
+
+Super Admin menambahkan rekening:
+
+Bank:
+Bank Jateng
+
+Nomor:
+1234567890
+
+Atas Nama:
+BUMDes Makmur Gedangan
+
+Semua perubahan harus dicatat.
+
+============================================================
+130. IMPORT/EXPORT
+============================================================
+
+Import:
+.xlsx
+.xls
+.csv
+
+Export:
+.xlsx
+.csv
+
+Export dapat digunakan untuk:
+- Backup
+- Analisis
+- Laporan
+- Pengolahan lanjutan
+
+============================================================
+131. PERFORMANCE
+============================================================
+
+Aplikasi harus ringan.
+
+Prioritas:
+- Mobile-first.
+- Optimasi query.
+- Pagination.
+- Lazy loading.
+- Optimasi gambar.
+- Kompresi bukti pembayaran.
+- Hindari query database berulang.
+- Gunakan index database yang sesuai.
+
+Target awal:
+Mampu menangani minimal ratusan pelanggan dan dapat
+dikembangkan menuju ribuan pelanggan.
+
+============================================================
+132. RESPONSIVE DESIGN
+============================================================
+
+Desktop:
+Sidebar + content.
+
+Tablet:
+Responsive layout.
+
+Mobile:
+Sidebar menjadi drawer/menu.
+
+Tabel besar pada mobile:
+Gunakan responsive table/card/list.
+
+============================================================
+133. UX PRINCIPLES
+============================================================
+
+1. Jangan membuat warga bingung.
+2. Gunakan bahasa Indonesia sederhana.
+3. Hindari istilah teknis.
+4. Gunakan status visual.
+5. Tombol aksi utama harus jelas.
+6. Jangan terlalu banyak form dalam satu layar.
+7. Konfirmasi tindakan penting.
+8. Jangan menghapus data penting secara permanen.
+9. Mobile-first.
+10. Loading state harus jelas.
+11. Error harus mudah dipahami.
+
+============================================================
+134. DATA DELETION
+============================================================
+
+Data transaksi pembayaran tidak boleh dihapus permanen
+melalui UI biasa.
+
+Gunakan:
+- Status
+- Soft delete jika diperlukan
+- Audit log
+
+Tujuan:
+Menjaga integritas histori keuangan.
+
+============================================================
+135. MASTER DATA
+============================================================
+
+Master data yang dikelola Super Admin:
+
+- RW
+- RT
+- Kategori
+- Tarif
+- Rekening
+- QRIS
+- Kontak
+- Media sosial
+- Template pesan
+- User
+- Role
+- Permission
+- Pengaturan jatuh tempo
+
+============================================================
+136. SYSTEM SETTINGS
+============================================================
+
+TABLE:
+
+system_settings
+
+id UUID PK
+key TEXT UNIQUE
+value JSONB
+description TEXT
+updated_at TIMESTAMPTZ
+updated_by UUID
+
+Digunakan untuk konfigurasi sistem yang tidak cocok
+dimasukkan ke tabel khusus.
+
+Jangan menyimpan informasi yang memiliki struktur relasional
+penting hanya sebagai JSON jika seharusnya menjadi tabel.
+
+============================================================
+137. DATABASE RELATIONSHIP
+============================================================
+
+customers
+    |
+    +---- service_locations
+              |
+              +---- category
+              |
+              +---- tariff
+              |
+              +---- bills
+                       |
+                       +---- payments
+                                |
+                                +---- bank_account
+                                |
+                                +---- payment_proof
+                                |
+                                +---- receipt
+
+customers
+    |
+    +---- broadcast_recipients
+
+users
+    |
+    +---- roles
+             |
+             +---- permissions
+
+users
+    |
+    +---- audit_logs
+
+============================================================
+138. STORAGE STRUCTURE
+============================================================
+
+Supabase Storage:
+
+payment-proofs/
+branding/
+documents/
+
+Payment proof harus private.
+
+Logo/branding dapat menggunakan akses publik jika
+memang diperlukan.
+
+============================================================
+139. MVP SCOPE
+============================================================
+
+P0 / WAJIB:
+
+- Supabase setup
+- Database
+- RLS
+- Authentication
+- Super Admin
+- Admin
+- Petugas
+- Customer
+- Permission
+- Customer management
+- Multi service
+- RW
+- RT
+- Category
+- Tariff
+- Billing
+- Due date
+- Overdue
+- Payment
+- Cash
+- Transfer
+- QRIS manual
+- Payment proof
+- Payment verification
+- Digital receipt
+- Bank accounts
+- Copy bank account
+- Customer login
+- PIN
+- Reset PIN
+- Import Excel/CSV
+- Audit log
+- Dashboard
+- Reports
+
+============================================================
+140. P1 SANGAT PENTING
+============================================================
+
+- WhatsApp reminder
+- WhatsApp template
+- Broadcast
+- Dynamic social media
+- Dynamic website
+- Dynamic contact
+- GPS
+- Map
+- Export
+- Reminder statistics
+
+============================================================
+141. P2 ROADMAP
+============================================================
+
+- WhatsApp Business API
+- Automatic WhatsApp reminder
+- Payment gateway
+- Automatic QRIS
+- Virtual Account
+- E-wallet
+- Automatic reconciliation
+- Notification automation
+- Complaint management
+- Waste collection schedule
+- Collection route
+- Fleet tracking
+- Field officer route optimization
+
+============================================================
+142. PAYMENT GATEWAY ROADMAP
+============================================================
+
+Jika RESIK berkembang:
+
+Customer
+-> Pilih metode pembayaran
+-> Payment Gateway
+-> Bayar
+-> Callback
+-> Payment otomatis confirmed
+-> Receipt otomatis
+-> Tagihan PAID
+
+Payment gateway bukan bagian dari MVP.
+
+============================================================
+143. WHATSAPP API ROADMAP
+============================================================
+
+Jika jumlah pelanggan meningkat signifikan:
+
+RESIK
+-> WhatsApp Business Platform/API
+-> Template Message
+-> Send
+-> Delivered
+-> Read
+
+Dapat dikembangkan menjadi:
+- Reminder otomatis.
+- Reminder H-3.
+- Reminder H+1.
+- Reminder H+7.
+- Notifikasi pembayaran.
+- Notifikasi bukti pembayaran.
+- Notifikasi broadcast.
+
+============================================================
+144. SUCCESS METRICS
+============================================================
+
+RESIK dianggap berhasil jika:
+
+1. Pelanggan dapat mengetahui status pembayaran tanpa kartu.
+2. Admin dapat melihat seluruh tunggakan.
+3. Pembayaran dapat dicatat secara terpusat.
+4. Bukti pembayaran dapat diberikan secara digital.
+5. Pengingat pelanggan menjadi lebih cepat.
+6. Admin tidak perlu menghitung tunggakan manual.
+7. Data pelanggan dapat dicari dengan cepat.
+8. Data dapat diimport dari spreadsheet.
+9. BUMDes dapat mengubah konfigurasi tanpa developer.
+10. Tidak ada pelanggan yang dapat melihat data pelanggan lain.
+
+============================================================
+145. ACCEPTANCE CRITERIA - LOGIN
+============================================================
+
+- Logo tampil.
+- Website tampil jika dikonfigurasi.
+- WhatsApp tampil jika dikonfigurasi.
+- Media sosial tampil jika aktif.
+- Field ID pelanggan berfungsi.
+- PIN berfungsi.
+- Show/hide PIN berfungsi.
+- Login berhasil untuk akun valid.
+- Login gagal ditangani dengan pesan yang jelas.
+- Rate limiting diterapkan.
+
+============================================================
+146. ACCEPTANCE CRITERIA - REKENING
+============================================================
+
+- Super Admin dapat menambah rekening.
+- Super Admin dapat mengubah rekening.
+- Super Admin dapat menonaktifkan rekening.
+- Nama bank bebas.
+- Nomor rekening bebas.
+- Nama pemilik rekening bebas.
+- Nomor rekening disimpan TEXT.
+- Rekening aktif tampil kepada pelanggan.
+- Rekening nonaktif tidak tampil.
+- Nomor rekening dapat dicopy.
+- Feedback copy tampil.
+- Histori transaksi lama tetap aman.
+
+============================================================
+147. ACCEPTANCE CRITERIA - USER MANAGEMENT
+============================================================
+
+- Super Admin dapat membuat Admin.
+- Super Admin dapat membuat Petugas.
+- Super Admin dapat mengubah role.
+- Super Admin dapat mengatur permission.
+- User dapat dinonaktifkan.
+- User nonaktif tidak dapat login.
+- Audit tetap tersedia.
+- Histori user tidak hilang.
+
+============================================================
+148. ACCEPTANCE CRITERIA - WHATSAPP REMINDER
+============================================================
+
+- Tunggakan terdeteksi otomatis.
+- Tombol WA tampil jika nomor tersedia.
+- Tombol tidak tampil jika nomor kosong.
+- Total tunggakan dihitung otomatis.
+- Multi-service dirangkum.
+- Template digunakan.
+- Variable diganti otomatis.
+- Preview tersedia.
+- Admin dapat membatalkan.
+- WhatsApp dapat dibuka.
+- Pesan otomatis terisi.
+- Admin tetap menekan Send.
+- Reminder dicatat.
+- Sistem tidak mengklaim pesan terkirim jika hanya menggunakan wa.me.
+
+============================================================
+149. ACCEPTANCE CRITERIA - PAYMENT
+============================================================
+
+TUNAI:
+Catat -> Confirm -> Receipt
+
+TRANSFER:
+Upload -> Pending -> Verify -> Receipt
+
+QRIS:
+Bayar -> Upload -> Pending -> Verify -> Receipt
+
+============================================================
+150. ACCEPTANCE CRITERIA - MULTI SERVICE
+============================================================
+
+Jika pelanggan mempunyai:
+
+Rumah
+dan
+Toko
+
+Maka:
+
+- Satu akun.
+- Satu login.
+- Dua layanan.
+- Dua tagihan.
+- Dua histori layanan.
+- Status dapat dilihat dalam satu dashboard.
+
+============================================================
+151. ACCEPTANCE CRITERIA - IMPORT
+============================================================
+
+Admin:
+
+1. Download template.
+2. Upload.
+3. Mapping.
+4. Preview.
+5. Validation.
+6. Import.
+7. Lihat hasil.
+8. Lihat error.
+
+============================================================
+152. ACCEPTANCE CRITERIA - BROADCAST
+============================================================
+
+Admin/Petugas dengan permission:
+
+- Membuat broadcast.
+- Memilih target.
+- Mengirim.
+- Melihat histori.
+
+Target:
+- Semua.
+- RW.
+- RT.
+- Kategori.
+- Pelanggan tertentu.
+
+============================================================
+153. ACCEPTANCE CRITERIA - AUDIT
+============================================================
+
+Setiap aktivitas kritis harus memiliki:
+
+- User.
+- Action.
+- Entity.
+- Entity ID.
+- Timestamp.
+- Data sebelum jika diperlukan.
+- Data sesudah jika diperlukan.
+- Metadata.
+
+============================================================
+154. FINAL USER FLOW - CUSTOMER
+============================================================
+
+Buka RESIK
+    |
+    v
+Login ID + PIN
+    |
+    v
+Dashboard
+    |
+    +--> Lihat Rumah
+    |
+    +--> Lihat Toko
+    |
+    +--> Lihat Tagihan
+    |
+    +--> Bayar
+            |
+            +--> Tunai
+            |
+            +--> Transfer
+            |
+            +--> QRIS
+                    |
+                    v
+              Upload Bukti
+                    |
+                    v
+             Menunggu Verifikasi
+                    |
+                    v
+                 LUNAS
+                    |
+                    v
+             Bukti Pembayaran
+
+============================================================
+155. FINAL USER FLOW - ADMIN
+============================================================
+
+Login
+ |
+ v
+Dashboard
+ |
+ +--> Pembayaran Menunggu Verifikasi
+ |
+ +--> Tunggakan
+ |       |
+ |       +--> Ingatkan WA
+ |
+ +--> Pelanggan
+ |
+ +--> Pembayaran
+ |
+ +--> Broadcast
+ |
+ +--> Import
+ |
+ +--> Laporan
+ |
+ +--> Audit
+
+============================================================
+156. FINAL USER FLOW - SUPER ADMIN
+============================================================
+
+Login
+ |
+ v
+Dashboard
+ |
+ v
+Pengaturan
+ |
+ +--> Profil BUMDes
+ +--> Kontak
+ +--> Media Sosial
+ +--> Website
+ +--> WhatsApp
+ +--> Rekening
+ +--> QRIS
+ +--> RW/RT
+ +--> Kategori
+ +--> Tarif
+ +--> Jatuh Tempo
+ +--> Template
+ +--> Pengguna
+ +--> Role
+ +--> Permission
+ |
+ v
+Audit Log
+
+============================================================
+157. FINAL ARCHITECTURE
+============================================================
+
+                         RESIK
+                           |
+                           v
+                   RESPONSIVE WEB APP
+                           |
+                           v
+                      SUPABASE
+                           |
+          +----------------+----------------+
+          |                |                |
+          v                v                v
+     PostgreSQL          Auth            Storage
+          |                |                |
+          |                |                +-- payment-proofs
+          |                |                +-- branding
+          |                |                +-- documents
+          |                |
+          |                +-- Super Admin
+          |                +-- Admin
+          |                +-- Petugas
+          |
+          +-- customers
+          +-- service_locations
+          +-- regions
+          +-- categories
+          +-- tariffs
+          +-- bills
+          +-- payments
+          +-- bank_accounts
+          +-- receipts
+          +-- broadcasts
+          +-- broadcast_recipients
+          +-- organization_links
+          +-- message_templates
+          +-- roles
+          +-- permissions
+          +-- user_roles
+          +-- role_permissions
+          +-- imports
+          +-- import_errors
+          +-- audit_logs
+          +-- system_settings
+                           |
+                           v
+                    EDGE FUNCTIONS
+                           |
+       +-------------------+-------------------+
+       |                   |                   |
+       v                   v                   v
+ Customer Login      Payment Verify      WA Reminder
+ Reset PIN           Receipt             ID Generator
+ Import              Billing            Overdue Detection
+
+============================================================
+158. DEVELOPMENT PRINCIPLES
+============================================================
+
+1. Jangan hardcode konfigurasi BUMDes.
+2. Gunakan Supabase sebagai sumber data utama.
+3. Gunakan RLS.
+4. Validasi permission di backend.
+5. Jangan percaya validasi frontend saja.
+6. Jangan menyimpan PIN plaintext.
+7. Jangan menghapus transaksi keuangan secara permanen.
+8. Semua aktivitas penting dicatat.
+9. Semua nominal menggunakan tipe numeric/decimal yang sesuai.
+10. Nomor rekening menggunakan TEXT.
+11. Nomor HP menggunakan TEXT.
+12. ID dibuat server-side.
+13. Tagihan tidak boleh duplikat.
+14. Pembayaran tidak boleh double.
+15. Sistem harus mobile-first.
+16. UI menggunakan bahasa Indonesia.
+17. Informasi kosong tidak menghasilkan tombol kosong.
+18. Fitur opsional tidak boleh merusak workflow utama.
+19. Data histori harus dipertahankan.
+20. Sistem harus siap berkembang.
+
+============================================================
+159. IMPORTANT BUSINESS RULES
+============================================================
+
+RULE 1:
+Satu customer dapat mempunyai banyak service location.
+
+RULE 2:
+Satu service location hanya mempunyai satu tagihan untuk
+satu periode.
+
+RULE 3:
+Tagihan yang melewati jatuh tempo dan belum lunas menjadi
+OVERDUE.
+
+RULE 4:
+Pembayaran transfer/QRIS harus diverifikasi sebelum
+dianggap PAID.
+
+RULE 5:
+Pembayaran yang sudah PAID tidak boleh dibuat ulang
+secara normal.
+
+RULE 6:
+Customer hanya melihat datanya sendiri.
+
+RULE 7:
+Rekening aktif dapat digunakan untuk pembayaran.
+
+RULE 8:
+Rekening nonaktif tidak ditampilkan untuk pembayaran baru.
+
+RULE 9:
+Histori transaksi tidak boleh berubah hanya karena
+rekening dinonaktifkan.
+
+RULE 10:
+Nomor rekening dapat dicopy.
+
+RULE 11:
+Jika nomor WhatsApp kosong, tombol reminder tidak muncul.
+
+RULE 12:
+WhatsApp MVP menggunakan wa.me dan bukan API otomatis.
+
+RULE 13:
+Sistem tidak boleh mengklaim WhatsApp telah terkirim
+jika hanya membuka wa.me.
+
+RULE 14:
+Super Admin dapat menambah Admin dan Petugas.
+
+RULE 15:
+Role dan permission harus dapat dikembangkan.
+
+RULE 16:
+RW dan RT harus configurable.
+
+RULE 17:
+Tarif harus configurable.
+
+RULE 18:
+Jatuh tempo harus configurable.
+
+RULE 19:
+Media sosial harus configurable.
+
+RULE 20:
+Nama bank dan rekening harus configurable.
+
+============================================================
+160. FINAL FEATURE CHECKLIST
+============================================================
+
+AUTHENTICATION
+[ ] Super Admin
+[ ] Admin
+[ ] Petugas
+[ ] Customer
+[ ] Customer ID + PIN
+[ ] Reset PIN
+[ ] Change PIN
+[ ] Rate limiting
+
+CUSTOMER
+[ ] Customer CRUD
+[ ] Customer ID otomatis
+[ ] Phone
+[ ] Address
+[ ] Multi-service
+
+REGION
+[ ] RW
+[ ] RT
+[ ] Dynamic region
+
+CATEGORY
+[ ] Rumah Tangga
+[ ] UMKM
+[ ] Perusahaan
+[ ] Dynamic category
+
+TARIFF
+[ ] Dynamic tariff
+[ ] Effective period
+[ ] Historical tariff
+
+BILLING
+[ ] Monthly bill
+[ ] Due date
+[ ] Automatic overdue
+[ ] Status
+
+PAYMENT
+[ ] Cash
+[ ] Transfer
+[ ] QRIS
+[ ] Proof upload
+[ ] Verification
+[ ] Rejection reason
+[ ] Digital receipt
+[ ] Receipt number
+
+BANK
+[ ] Add bank
+[ ] Edit bank
+[ ] Disable bank
+[ ] Custom bank name
+[ ] Custom account number
+[ ] Account name
+[ ] Copy account number
+[ ] Clipboard feedback
+
+QRIS
+[ ] Upload QRIS
+[ ] Replace QRIS
+[ ] Active/inactive
+
+WHATSAPP
+[ ] Login WhatsApp
+[ ] Overdue reminder
+[ ] Preview message
+[ ] Automatic message template
+[ ] Multi-service summary
+[ ] wa.me
+[ ] Last reminded
+[ ] Reminder audit
+[ ] Bulk preparation
+[ ] No auto-send in MVP
+
+BROADCAST
+[ ] All customers
+[ ] RW
+[ ] RT
+[ ] Category
+[ ] Specific customer
+[ ] Read status
+[ ] Admin send
+[ ] Petugas send with permission
+
+SOCIAL
+[ ] WhatsApp
+[ ] Instagram
+[ ] TikTok
+[ ] Facebook
+[ ] Website
+[ ] Email
+[ ] Google Maps
+[ ] Active/inactive
+[ ] Sort order
+[ ] Hide if empty
+
+GPS
+[ ] Latitude
+[ ] Longitude
+[ ] Map
+[ ] RW filter
+[ ] RT filter
+[ ] Category filter
+
+IMPORT
+[ ] Excel
+[ ] CSV
+[ ] Template
+[ ] Mapping
+[ ] Validation
+[ ] Preview
+[ ] Error report
+[ ] Auto ID
+[ ] Auto service
+[ ] Auto initial PIN
+
+REPORT
+[ ] Payment report
+[ ] Overdue report
+[ ] Revenue
+[ ] Customer
+[ ] RW
+[ ] RT
+[ ] Category
+[ ] Payment method
+[ ] Verification
+[ ] WhatsApp reminder
+
+USER MANAGEMENT
+[ ] Add Admin
+[ ] Add Petugas
+[ ] Edit user
+[ ] Disable user
+[ ] Role management
+[ ] Permission management
+
+AUDIT
+[ ] Login
+[ ] Payment
+[ ] Verification
+[ ] Customer
+[ ] Import
+[ ] Broadcast
+[ ] WhatsApp
+[ ] User management
+[ ] Bank
+[ ] Tariff
+[ ] Settings
+
+SUPABASE
+[ ] PostgreSQL
+[ ] Auth
+[ ] Storage
+[ ] RLS
+[ ] Edge Functions
+[ ] Private buckets
+[ ] Signed URLs
+
+============================================================
+161. FINAL PRODUCT DEFINITION
+============================================================
+
+RESIK adalah sistem manajemen layanan persampahan BUMDes
+Makmur Gedangan yang menghubungkan:
+
+CUSTOMER
+    ->
+SERVICE LOCATION
+    ->
+BILL
+    ->
+PAYMENT
+    ->
+VERIFICATION
+    ->
+RECEIPT
+    ->
+OVERDUE
+    ->
+WHATSAPP REMINDER
+    ->
+REPORT
+
+dengan seluruh konfigurasi operasional berada di bawah
+kendali Super Admin.
+
+RESIK bukan hanya aplikasi pembayaran.
+
+RESIK adalah pusat digital pengelolaan layanan persampahan
+BUMDes Makmur Gedangan.
+
+============================================================
+162. FINAL TAGLINE
+============================================================
+
+RESIK
+
+Retribusi Elektronik & Sistem Informasi Kebersihan
+
+BUMDes Makmur Gedangan
+
+"Iuran Mudah, Lingkungan Bersih."
+
+============================================================
+163. IMPLEMENTATION PRIORITY
+============================================================
+
+Prioritas pembangunan:
+
+PHASE 1:
+Foundation + Supabase
+- Database
+- Auth
+- RLS
+- Roles
+- Permissions
+- Basic UI
+
+PHASE 2:
+Customer + Service
+- Customer
+- RW/RT
+- Category
+- Tariff
+- Multi-service
+- GPS
+
+PHASE 3:
+Billing + Payment
+- Billing
+- Overdue
+- Cash
+- Transfer
+- QRIS
+- Proof
+- Verification
+- Receipt
+
+PHASE 4:
+Communication
+- WhatsApp reminder
+- Templates
+- Broadcast
+- Social media
+- Contact
+
+PHASE 5:
+Administration
+- Import
+- Reports
+- User management
+- Permission
+- Audit
+
+PHASE 6:
+Advanced
+- Payment gateway
+- WhatsApp API
+- Automatic notification
+- Advanced map
+- Operational waste collection
+
+============================================================
+END OF MASTER PRD
+RESIK - BUMDes Makmur Gedangan
+============================================================
