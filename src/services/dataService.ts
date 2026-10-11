@@ -65,6 +65,17 @@ class DataService {
     this.roles = this.load(STORAGE_KEYS.ROLES, INITIAL_ROLES);
     this.permissions = INITIAL_PERMISSIONS;
     this.customers = this.load(STORAGE_KEYS.CUSTOMERS, INITIAL_CUSTOMERS);
+    // Sanitize customers so pinHash is always string and isDefaultPin is boolean
+    this.customers = this.customers.map(c => ({
+      ...c,
+      pinHash: c.pinHash ? String(c.pinHash).trim() : '1234',
+      isDefaultPin: c.isDefaultPin ?? (c.pinHash ? String(c.pinHash).trim() === '1234' : true)
+    }));
+    // Ensure sample customer Budi Santoso (cust-1) always has his phone number for testing
+    const budi = this.customers.find(c => c.id === 'cust-1' || c.customerCode === 'PLG-RW03-0025');
+    if (budi && (!budi.phone || !budi.phone.trim())) {
+      budi.phone = '081234567890';
+    }
     this.services = this.load(STORAGE_KEYS.SERVICES, INITIAL_SERVICE_LOCATIONS);
     this.bills = this.load(STORAGE_KEYS.BILLS, INITIAL_BILLS);
     this.payments = this.load(STORAGE_KEYS.PAYMENTS, INITIAL_PAYMENTS);
@@ -536,6 +547,23 @@ class DataService {
     return this.customers.find(c => c.customerCode.trim().toUpperCase() === code.trim().toUpperCase());
   }
 
+  public normalizePhone(num?: string | null): string {
+    if (!num) return '';
+    let digits = String(num).replace(/\D/g, '');
+    if (digits.startsWith('62')) {
+      digits = '0' + digits.slice(2);
+    } else if (digits.startsWith('8')) {
+      digits = '0' + digits;
+    }
+    return digits;
+  }
+
+  public getCustomersByPhone(phone: string): Customer[] {
+    const target = this.normalizePhone(phone);
+    if (target.length < 8) return [];
+    return this.customers.filter(c => c.phone && this.normalizePhone(c.phone) === target);
+  }
+
   public getCustomerByCodeOrPhone(identifier: string): Customer | undefined {
     const trimmed = identifier.trim();
     if (!trimmed) return undefined;
@@ -546,21 +574,10 @@ class DataService {
     );
     if (byCode) return byCode;
 
-    // 2. Normalize input phone for comparison (strip non-digits, unify 62 vs 0)
-    const normalize = (num: string): string => {
-      let digits = num.replace(/\D/g, '');
-      if (digits.startsWith('62')) {
-        digits = '0' + digits.slice(2);
-      }
-      return digits;
-    };
-
-    const inputPhoneClean = normalize(trimmed);
-    if (inputPhoneClean.length >= 8) {
-      const byPhone = this.customers.find(c => {
-        if (!c.phone) return false;
-        return normalize(c.phone) === inputPhoneClean;
-      });
+    // 2. Normalized phone match (supports 08xxx, 628xxx, +62 8xxx, 8xxx)
+    const target = this.normalizePhone(trimmed);
+    if (target.length >= 8) {
+      const byPhone = this.customers.find(c => c.phone && this.normalizePhone(c.phone) === target);
       if (byPhone) return byPhone;
     }
 

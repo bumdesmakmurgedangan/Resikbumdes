@@ -63,9 +63,11 @@ export const LoginView: React.FC = () => {
 
 
   // Quick fill buttons for testing/demo
-  const fillSampleCustomer = (idOrPhone: string, pin: string) => {
+  const fillSampleCustomer = (idOrPhone: string, fallbackPin: string = '1234') => {
+    const cust = dataService.getCustomerByCodeOrPhone(idOrPhone);
+    const activePin = cust?.pinHash ? String(cust.pinHash).trim() : fallbackPin;
     setCustomerIdentifier(idOrPhone);
-    setCustomerPin(pin);
+    setCustomerPin(activePin);
     setErrorMessage(null);
   };
 
