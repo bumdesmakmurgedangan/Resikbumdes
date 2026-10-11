@@ -5,7 +5,7 @@ import { Customer, ServiceLocation, Category, Tariff, Region } from '../types';
 import {
   Users, UserPlus, Search, Edit3, Key, Plus,
   Home, Store, Building, MapPin, CheckCircle2, XCircle,
-  Eye, RefreshCw, AlertCircle
+  Eye, RefreshCw, AlertCircle, Navigation, ExternalLink
 } from 'lucide-react';
 
 export const CustomersView: React.FC = () => {
@@ -520,9 +520,17 @@ export const CustomersView: React.FC = () => {
                       </div>
                     </div>
                     {srv.latitude && srv.longitude && (
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        📍 {srv.latitude}, {srv.longitude}
-                      </span>
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${srv.latitude},${srv.longitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-bold border border-emerald-200 transition shadow-2xs cursor-pointer"
+                        title="Buka rute Google Maps ke rumah pelanggan"
+                      >
+                        <Navigation className="w-3 h-3 text-emerald-600" />
+                        <span>Google Maps</span>
+                        <ExternalLink className="w-2.5 h-2.5 text-emerald-500" />
+                      </a>
                     )}
                   </div>
                 ))}
