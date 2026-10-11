@@ -166,7 +166,7 @@ class DataService {
   // SYSTEM SETTINGS & LINKS
   // ----------------------------------------------------
   public getSettings(): SystemSettings {
-    return { ...this.settings };
+    return { ...INITIAL_SYSTEM_SETTINGS, ...this.settings };
   }
 
   public updateSettings(newSettings: Partial<SystemSettings>, actorUser: User) {

@@ -15,7 +15,18 @@ export const INITIAL_SYSTEM_SETTINGS: SystemSettings = {
   defaultDueDay: 10,
   qrisImageUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=00020101021226580014ID.LINKAJA.WWW011893600914300000000151440014ID.CO.QRIS.WWW0215ID10200212345670303UMI5204549953033605802ID5922BUMDES+MAKMUR+GEDANGAN6008SIDOARJO61056125462070703A0163041A2B',
   qrisDescription: 'Scan QRIS RESIK BUMDes Makmur Gedangan melalui BCA Mobile, BRImo, Mandiri Livin, BNI, Dana, OVO, GoPay, ShopeePay, atau LinkAja.',
-  isQrisActive: true
+  isQrisActive: true,
+
+  // Kop Surat & Pejabat Penandatangan Laporan Cetak
+  kopParentInstitution: 'PEMERINTAH KABUPATEN SIDOARJO • KECAMATAN GEDANGAN',
+  kopUnitName: 'UNIT USAHA PENGELOLAAN KEBERSIHAN & PERSAMPAHAN "RESIK"',
+  kopCity: 'Gedangan',
+  signer1Title: 'Direktur BUMDes Makmur Gedangan',
+  signer1Name: 'Joko Sutrisno, S.E.',
+  signer1Id: 'NIP / ID: DIR-BUMDES-01',
+  signer2Title: 'Bendahara / Petugas Operasional',
+  signer2Name: 'Siti Aminah',
+  signer2Id: 'Unit Usaha Persampahan RESIK'
 };
 
 export const INITIAL_PERMISSIONS: Permission[] = [

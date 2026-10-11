@@ -244,6 +244,21 @@ export interface SystemSettings {
   qrisImageUrl: string;
   qrisDescription: string;
   isQrisActive: boolean;
+
+  // Konfigurasi Kop Surat & Pejabat Penandatangan Laporan Cetak (Anti-Hardcode)
+  kopParentInstitution?: string;
+  kopUnitName?: string;
+  kopCity?: string;
+
+  // Pejabat 1: Mengetahui / Direktur BUMDes / Pimpinan
+  signer1Title?: string;
+  signer1Name?: string;
+  signer1Id?: string;
+
+  // Pejabat 2: Pelaksana / Bendahara / Petugas
+  signer2Title?: string;
+  signer2Name?: string;
+  signer2Id?: string;
 }
 
 export interface ImportItem {

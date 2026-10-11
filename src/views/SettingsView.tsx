@@ -18,7 +18,7 @@ export const SettingsView: React.FC = () => {
   if (!currentUser) return null;
 
   const [activeTab, setActiveTab] = useState<
-    'PROFIL' | 'LINKS' | 'BANK' | 'QRIS' | 'WILAYAH' | 'TARIF' | 'TEMPLATES' | 'USERS' | 'SUPABASE'
+    'PROFIL' | 'KOP' | 'LINKS' | 'BANK' | 'QRIS' | 'WILAYAH' | 'TARIF' | 'TEMPLATES' | 'USERS' | 'SUPABASE'
   >('PROFIL');
 
   const [refreshKey, setRefreshKey] = useState(0);
@@ -206,6 +206,12 @@ export const SettingsView: React.FC = () => {
           Profil BUMDes
         </button>
         <button
+          onClick={() => setActiveTab('KOP')}
+          className={`px-3 py-2 rounded-xl transition ${activeTab === 'KOP' ? 'bg-white text-brand-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+        >
+          Kop &amp; Cetak PDF
+        </button>
+        <button
           onClick={() => setActiveTab('BANK')}
           className={`px-3 py-2 rounded-xl transition ${activeTab === 'BANK' ? 'bg-white text-brand-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
         >
@@ -349,6 +355,252 @@ export const SettingsView: React.FC = () => {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* ================= TAB: KOP & CETAK PDF ================= */}
+      {activeTab === 'KOP' && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+            <div>
+              <h2 className="font-bold text-sm text-slate-900">
+                Pengaturan Kop Surat &amp; Penandatangan Laporan Cetak (Anti-Hardcode)
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Atur format kop surat resmi BUMDes dan nama/jabatan pejabat penandatangan yang tercetak pada laporan PDF.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                dataService.updateSettings(settings, currentUser);
+                alert('Pengaturan kop surat & tanda tangan berhasil disimpan!');
+                setRefreshKey(prev => prev + 1);
+              }}
+              className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm self-start sm:self-auto"
+            >
+              <Check className="w-4 h-4" />
+              <span>Simpan Pengaturan</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Form Pengaturan */}
+            <div className="space-y-4 text-xs">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-brand-600" />
+                  <span>1. Format Kop Surat Laporan (Header)</span>
+                </h3>
+
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Instansi Induk (Pemerintah Kabupaten / Kecamatan / Desa)
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.kopParentInstitution || ''}
+                    onChange={(e) => setSettings({ ...settings, kopParentInstitution: e.target.value })}
+                    placeholder="Contoh: PEMERINTAH KABUPATEN SIDOARJO • KECAMATAN GEDANGAN"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Nama Badan Usaha (BUMDes)
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.bumdesName}
+                    onChange={(e) => setSettings({ ...settings, bumdesName: e.target.value })}
+                    placeholder="BADAN USAHA MILIK DESA (BUMDES) MAKMUR GEDANGAN"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Nama Unit Usaha / Layanan
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.kopUnitName || ''}
+                    onChange={(e) => setSettings({ ...settings, kopUnitName: e.target.value })}
+                    placeholder="Contoh: UNIT USAHA PENGELOLAAN KEBERSIHAN & PERSAMPAHAN 'RESIK'"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Alamat Sekretariat &amp; Kontak pada Kop
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={settings.address}
+                    onChange={(e) => setSettings({ ...settings, address: e.target.value })}
+                    placeholder="Alamat kantor, kontak telepon, atau email BUMDes"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              {/* Pejabat Penandatangan */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                  <Shield className="w-4 h-4 text-emerald-600" />
+                  <span>2. Pejabat Penandatangan Laporan (Footer Pengesahan)</span>
+                </h3>
+
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Kota / Wilayah Pengesahan Dokumen
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.kopCity || ''}
+                    onChange={(e) => setSettings({ ...settings, kopCity: e.target.value })}
+                    placeholder="Contoh: Gedangan atau Sidoarjo"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl"
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/80">
+                  <div className="font-bold text-slate-800 text-xs mb-2">Pihak 1 (Mengetahui / Pimpinan)</div>
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={settings.signer1Title || ''}
+                      onChange={(e) => setSettings({ ...settings, signer1Title: e.target.value })}
+                      placeholder="Jabatan, contoh: Direktur BUMDes Makmur Gedangan"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl"
+                    />
+                    <input
+                      type="text"
+                      value={settings.signer1Name || ''}
+                      onChange={(e) => setSettings({ ...settings, signer1Name: e.target.value })}
+                      placeholder="Nama Lengkap & Gelar, contoh: Joko Sutrisno, S.E."
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold"
+                    />
+                    <input
+                      type="text"
+                      value={settings.signer1Id || ''}
+                      onChange={(e) => setSettings({ ...settings, signer1Id: e.target.value })}
+                      placeholder="NIP / Nomor ID, contoh: NIP / ID: DIR-BUMDES-01"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-[11px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/80">
+                  <div className="font-bold text-slate-800 text-xs mb-2">Pihak 2 (Pelaksana / Bendahara / Petugas)</div>
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={settings.signer2Title || ''}
+                      onChange={(e) => setSettings({ ...settings, signer2Title: e.target.value })}
+                      placeholder="Jabatan, contoh: Bendahara / Petugas Operasional"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl"
+                    />
+                    <input
+                      type="text"
+                      value={settings.signer2Name || ''}
+                      onChange={(e) => setSettings({ ...settings, signer2Name: e.target.value })}
+                      placeholder="Nama Lengkap, contoh: Siti Aminah"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold"
+                    />
+                    <input
+                      type="text"
+                      value={settings.signer2Id || ''}
+                      onChange={(e) => setSettings({ ...settings, signer2Id: e.target.value })}
+                      placeholder="Keterangan Unit / ID, contoh: Unit Usaha Persampahan RESIK"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-[11px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  dataService.updateSettings(settings, currentUser);
+                  alert('Pengaturan kop surat & tanda tangan berhasil disimpan!');
+                  setRefreshKey(prev => prev + 1);
+                }}
+                className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <Check className="w-4 h-4" />
+                <span>Simpan Pengaturan Kop &amp; Pejabat Laporan</span>
+              </button>
+            </div>
+
+            {/* Live Preview Kop Surat & Tanda Tangan */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                <span>Pratinjau Hasil Cetak / PDF:</span>
+                <span className="text-[11px] text-brand-700 font-mono">Live Preview Real-Time</span>
+              </div>
+
+              <div className="p-6 bg-white border-2 border-dashed border-slate-300 rounded-3xl space-y-6 shadow-sm">
+                {/* Kop Preview */}
+                <div className="text-center space-y-1 pb-3 border-b-2 border-slate-800">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                    {settings.kopParentInstitution || 'PEMERINTAH KABUPATEN SIDOARJO • KECAMATAN GEDANGAN'}
+                  </div>
+                  <div className="text-sm font-black uppercase tracking-wide text-slate-900">
+                    {settings.bumdesName || 'BADAN USAHA MILIK DESA (BUMDES) MAKMUR GEDANGAN'}
+                  </div>
+                  <div className="text-[11px] text-slate-600">
+                    {settings.kopUnitName || 'UNIT USAHA PENGELOLAAN KEBERSIHAN & PERSAMPAHAN (RESIK)'}
+                  </div>
+                  <div className="text-[10px] text-slate-500">
+                    Sekretariat: {settings.address} • Email: {settings.email}
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center text-xs text-slate-500 italic">
+                  [ Area Isi Dokumen / Tabel Data Laporan Terpilih ]
+                </div>
+
+                {/* Signatures Preview */}
+                <div className="grid grid-cols-2 gap-4 text-center text-xs pt-4 border-t border-slate-200">
+                  <div>
+                    <div className="text-slate-500 text-[11px]">Mengetahui,</div>
+                    <div className="font-bold text-slate-800 text-[11px] mt-0.5">
+                      {settings.signer1Title || 'Direktur BUMDes Makmur Gedangan'}
+                    </div>
+                    <div className="h-16 flex items-center justify-center text-slate-300 text-[10px] italic">
+                      (Tanda Tangan)
+                    </div>
+                    <div className="font-bold underline text-slate-900 text-xs">
+                      {settings.signer1Name || 'Joko Sutrisno, S.E.'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono">
+                      {settings.signer1Id || 'NIP / ID: DIR-BUMDES-01'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-slate-500 text-[11px]">
+                      {settings.kopCity || 'Gedangan'}, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </div>
+                    <div className="font-bold text-slate-800 text-[11px] mt-0.5">
+                      {settings.signer2Title || 'Bendahara / Petugas Operasional'}
+                    </div>
+                    <div className="h-16 flex items-center justify-center text-slate-300 text-[10px] italic">
+                      (Tanda Tangan)
+                    </div>
+                    <div className="font-bold underline text-slate-900 text-xs">
+                      {settings.signer2Name || 'Siti Aminah'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono">
+                      {settings.signer2Id || 'Unit Usaha Persampahan RESIK'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

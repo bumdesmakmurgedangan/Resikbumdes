@@ -12,6 +12,7 @@ type PeriodPreset = 'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'CUSTOM';
 
 export const ReportsView: React.FC = () => {
   const { currentUser } = useAuth();
+  const settings = dataService.getSettings();
 
   const [reportType, setReportType] = useState<
     'PEMBAYARAN' | 'TUNGGAKAN' | 'PENDAPATAN' | 'REMINDER'
@@ -318,16 +319,16 @@ export const ReportsView: React.FC = () => {
         <div className="hidden print:block pb-4 mb-4 border-b-2 border-black">
           <div className="text-center space-y-1">
             <h1 className="text-sm font-bold uppercase tracking-wider text-black">
-              PEMERINTAH KABUPATEN SIDOARJO • KECAMATAN GEDANGAN
+              {settings.kopParentInstitution || 'PEMERINTAH KABUPATEN SIDOARJO • KECAMATAN GEDANGAN'}
             </h1>
             <h2 className="text-lg font-black uppercase text-black tracking-wide">
-              BADAN USAHA MILIK DESA (BUMDES) MAKMUR GEDANGAN
+              {settings.bumdesName || 'BADAN USAHA MILIK DESA (BUMDES) MAKMUR GEDANGAN'}
             </h2>
             <p className="text-xs text-slate-700">
-              UNIT LAYANAN RETRIBUSI &amp; PENGELOLAAN PERSAMPAHAN LINGKUNGAN (RESIK)
+              {settings.kopUnitName || 'UNIT USAHA PENGELOLAAN KEBERSIHAN & PERSAMPAHAN "RESIK"'}
             </p>
             <p className="text-[10px] text-slate-600">
-              Sekretariat: Kantor Desa Gedangan, Kec. Gedangan, Kab. Sidoarjo • Email: bumdes.gedangan@gmail.com
+              Sekretariat: {settings.address} • Email: {settings.email}
             </p>
             <div className="border-b border-black mt-2 pt-1"></div>
           </div>
@@ -624,19 +625,31 @@ export const ReportsView: React.FC = () => {
         <div className="hidden print:grid grid-cols-2 gap-8 pt-8 text-center text-xs text-black">
           <div>
             <p className="text-slate-600">Mengetahui,</p>
-            <p className="font-bold text-slate-900 mt-0.5">Direktur BUMDes Makmur Gedangan</p>
+            <p className="font-bold text-slate-900 mt-0.5">
+              {settings.signer1Title || 'Direktur BUMDes Makmur Gedangan'}
+            </p>
             <div className="h-20"></div>
-            <p className="font-bold underline text-slate-900">Joko Sutrisno, S.E.</p>
-            <p className="text-[10px] text-slate-500">NIP / ID: DIR-BUMDES-01</p>
+            <p className="font-bold underline text-slate-900">
+              {settings.signer1Name || 'Joko Sutrisno, S.E.'}
+            </p>
+            <p className="text-[10px] text-slate-500 font-mono">
+              {settings.signer1Id || 'NIP / ID: DIR-BUMDES-01'}
+            </p>
           </div>
           <div>
             <p className="text-slate-600">
-              Gedangan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {settings.kopCity || 'Gedangan'}, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
-            <p className="font-bold text-slate-900 mt-0.5">Bendahara / Petugas Operasional</p>
+            <p className="font-bold text-slate-900 mt-0.5">
+              {settings.signer2Title || 'Bendahara / Petugas Operasional'}
+            </p>
             <div className="h-20"></div>
-            <p className="font-bold underline text-slate-900">{currentUser?.fullName || 'Siti Aminah'}</p>
-            <p className="text-[10px] text-slate-500">Unit Usaha Persampahan RESIK</p>
+            <p className="font-bold underline text-slate-900">
+              {settings.signer2Name || currentUser?.fullName || 'Siti Aminah'}
+            </p>
+            <p className="text-[10px] text-slate-500 font-mono">
+              {settings.signer2Id || 'Unit Usaha Persampahan RESIK'}
+            </p>
           </div>
         </div>
 
