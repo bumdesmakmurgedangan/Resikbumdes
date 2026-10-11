@@ -236,6 +236,7 @@ export interface SystemSettings {
   bumdesName: string;
   tagline: string;
   logoUrl: string;
+  faviconUrl?: string; // URL / Data URI Favicon Tab Browser
   address: string;
   phoneWhatsapp: string;
   email: string;

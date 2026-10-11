@@ -8,6 +8,7 @@ export const INITIAL_SYSTEM_SETTINGS: SystemSettings = {
   bumdesName: 'BUMDes Makmur Gedangan',
   tagline: 'Iuran Mudah, Lingkungan Bersih.',
   logoUrl: 'https://i.ibb.co.com/nNnkDbWh/Logo-Resik-dengan-R-Terbuka.webp',
+  faviconUrl: 'https://i.ibb.co.com/nNnkDbWh/Logo-Resik-dengan-R-Terbuka.webp',
   address: 'Jl. Raya Gedangan No. 45, Kec. Gedangan, Kab. Sidoarjo, Jawa Timur 61254',
   phoneWhatsapp: '085150736692',
   email: 'bumdes.gedangan@gmail.com',

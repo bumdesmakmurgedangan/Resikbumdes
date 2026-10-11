@@ -97,6 +97,9 @@ class DataService {
 
     // Run automatic overdue detection on initialization
     this.updateOverdueStatus();
+
+    // Apply favicon dynamically to browser tab
+    this.applyFavicon();
   }
 
   private load<T>(key: string, defaultValue: T): T {
@@ -174,7 +177,21 @@ class DataService {
     this.settings = { ...this.settings, ...newSettings };
     this.save(STORAGE_KEYS.SETTINGS, this.settings);
     this.logAudit(actorUser.id, actorUser.fullName, 'SETTINGS_UPDATE', 'SYSTEM_SETTINGS', null, old, this.settings);
+    this.applyFavicon(this.settings.faviconUrl || this.settings.logoUrl);
     return this.settings;
+  }
+
+  public applyFavicon(url?: string) {
+    if (typeof document === 'undefined') return;
+    const targetUrl = (url && url.trim().length > 0) ? url.trim() : (this.settings.faviconUrl || this.settings.logoUrl || INITIAL_SYSTEM_SETTINGS.faviconUrl);
+    if (!targetUrl) return;
+    let link = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = targetUrl;
   }
 
   public getOrganizationLinks(): OrganizationLink[] {
