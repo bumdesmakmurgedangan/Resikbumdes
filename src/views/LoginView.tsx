@@ -343,6 +343,7 @@ export const LoginView: React.FC = () => {
               <div className="flex flex-wrap items-center justify-center gap-2">
                 {activeLinks.map((link) => {
                   const style = getSocialBadgeStyle(link.type);
+                  const appName = style.brandName || link.label;
                   return (
                     <a
                       key={link.id}
@@ -350,12 +351,12 @@ export const LoginView: React.FC = () => {
                       target="_blank"
                       rel="noreferrer"
                       className={`flex items-center gap-2 px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-700 transition shadow-2xs hover:shadow-xs hover:-translate-y-0.5 ${style.hoverBorder}`}
-                      title={link.label}
+                      title={appName}
                     >
                       <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${style.badgeBg}`}>
                         <SocialBrandIcon type={link.type} className="w-3.5 h-3.5" />
                       </div>
-                      <span className="truncate max-w-[130px]">{link.label}</span>
+                      <span className="truncate max-w-[130px]">{appName}</span>
                     </a>
                   );
                 })}

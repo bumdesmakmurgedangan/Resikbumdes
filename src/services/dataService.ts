@@ -61,8 +61,32 @@ class DataService {
     this.bills = this.load(STORAGE_KEYS.BILLS, INITIAL_BILLS);
     this.payments = this.load(STORAGE_KEYS.PAYMENTS, INITIAL_PAYMENTS);
     this.bankAccounts = this.load(STORAGE_KEYS.BANK_ACCOUNTS, INITIAL_BANK_ACCOUNTS);
-    this.orgLinks = this.load(STORAGE_KEYS.ORG_LINKS, INITIAL_ORGANIZATION_LINKS);
     this.templates = this.load(STORAGE_KEYS.TEMPLATES, INITIAL_MESSAGE_TEMPLATES);
+    this.orgLinks = this.load(STORAGE_KEYS.ORG_LINKS, INITIAL_ORGANIZATION_LINKS);
+    // Sanitize cached labels to clean app names
+    const cleanBrandNames: Record<string, string> = {
+      WHATSAPP: 'WhatsApp',
+      INSTAGRAM: 'Instagram',
+      TIKTOK: 'TikTok',
+      FACEBOOK: 'Facebook',
+      WEBSITE: 'Website',
+      EMAIL: 'Email',
+      MAP: 'Google Maps'
+    };
+    let orgLinksNeedSave = false;
+    this.orgLinks = this.orgLinks.map(l => {
+      if (cleanBrandNames[l.type] && l.label !== cleanBrandNames[l.type] && (
+        l.label.includes('BUMDes') || l.label.includes('Resmi') || l.label.includes('Page') ||
+        l.label.includes('Desa') || l.label.includes('Layanan') || l.label.includes('Kantor')
+      )) {
+        orgLinksNeedSave = true;
+        return { ...l, label: cleanBrandNames[l.type] };
+      }
+      return l;
+    });
+    if (orgLinksNeedSave) {
+      this.save(STORAGE_KEYS.ORG_LINKS, this.orgLinks);
+    }
     this.regions = this.load(STORAGE_KEYS.REGIONS, INITIAL_REGIONS);
     this.categories = this.load(STORAGE_KEYS.CATEGORIES, INITIAL_CATEGORIES);
     this.tariffs = this.load(STORAGE_KEYS.TARIFFS, INITIAL_TARIFFS);

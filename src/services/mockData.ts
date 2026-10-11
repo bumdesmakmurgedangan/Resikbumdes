@@ -154,7 +154,7 @@ export const INITIAL_ORGANIZATION_LINKS: OrganizationLink[] = [
   {
     id: 'ol-1',
     type: 'WHATSAPP',
-    label: 'WhatsApp BUMDes',
+    label: 'WhatsApp',
     url: 'https://wa.me/6285150736692?text=Halo%20BUMDes%20Makmur%20Gedangan%2C%20saya%20membutuhkan%20bantuan%20terkait%20akun%20RESIK.',
     icon: 'MessageSquare',
     sortOrder: 1,
@@ -164,7 +164,7 @@ export const INITIAL_ORGANIZATION_LINKS: OrganizationLink[] = [
   {
     id: 'ol-2',
     type: 'INSTAGRAM',
-    label: 'Instagram Resmi',
+    label: 'Instagram',
     url: 'https://instagram.com/bumdes.gedangan',
     icon: 'Instagram',
     sortOrder: 2,
@@ -174,7 +174,7 @@ export const INITIAL_ORGANIZATION_LINKS: OrganizationLink[] = [
   {
     id: 'ol-3',
     type: 'TIKTOK',
-    label: 'TikTok BUMDes',
+    label: 'TikTok',
     url: 'https://tiktok.com/@bumdesgedangan',
     icon: 'Video',
     sortOrder: 3,
@@ -184,7 +184,7 @@ export const INITIAL_ORGANIZATION_LINKS: OrganizationLink[] = [
   {
     id: 'ol-4',
     type: 'FACEBOOK',
-    label: 'Facebook Page',
+    label: 'Facebook',
     url: 'https://facebook.com/bumdesgedangan',
     icon: 'Facebook',
     sortOrder: 4,
@@ -194,7 +194,7 @@ export const INITIAL_ORGANIZATION_LINKS: OrganizationLink[] = [
   {
     id: 'ol-5',
     type: 'WEBSITE',
-    label: 'Website Desa Gedangan',
+    label: 'Website',
     url: 'https://bumdesgedangan.id',
     icon: 'Globe',
     sortOrder: 5,
@@ -204,7 +204,7 @@ export const INITIAL_ORGANIZATION_LINKS: OrganizationLink[] = [
   {
     id: 'ol-6',
     type: 'EMAIL',
-    label: 'Email Layanan',
+    label: 'Email',
     url: 'mailto:bumdes.gedangan@gmail.com',
     icon: 'Mail',
     sortOrder: 6,
@@ -214,7 +214,7 @@ export const INITIAL_ORGANIZATION_LINKS: OrganizationLink[] = [
   {
     id: 'ol-7',
     type: 'MAP',
-    label: 'Lokasi Kantor BUMDes',
+    label: 'Google Maps',
     url: 'https://maps.google.com/?q=Gedangan+Sidoarjo',
     icon: 'MapPin',
     sortOrder: 7,
