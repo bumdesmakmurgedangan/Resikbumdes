@@ -26,6 +26,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const pendingPaymentsCount = dataService.getPayments({ status: 'PENDING' }).length;
   // Get overdue count for badge
   const overdueCustomersCount = dataService.getOverdueCustomers().length;
+  // Get pending customer registrations count for badge
+  const pendingRegistrationsCount = dataService.getPendingCustomerRegistrationsCount();
 
   const handleSelectTab = (tab: string) => {
     setActiveTab(tab);
@@ -200,6 +202,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <Users className="w-4 h-4 shrink-0" />
                       <span>Pelanggan & Lokasi Layanan</span>
                     </div>
+                    {pendingRegistrationsCount > 0 && (
+                      <span className="bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse shadow-2xs" title={`${pendingRegistrationsCount} pendaftaran baru`}>
+                        {pendingRegistrationsCount} Baru
+                      </span>
+                    )}
                   </button>
                 )}
 

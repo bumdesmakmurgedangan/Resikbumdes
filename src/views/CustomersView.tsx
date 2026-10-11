@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { dataService } from '../services/dataService';
-import { Customer, ServiceLocation, Category, Tariff, Region } from '../types';
+import { Customer, ServiceLocation, Category, Tariff, Region, CustomerRegistration } from '../types';
 import {
   Users, UserPlus, Search, Edit3, Key, Plus,
   Home, Store, Building, MapPin, CheckCircle2, XCircle,
-  Eye, RefreshCw, AlertCircle, Navigation, ExternalLink, Check
+  Eye, RefreshCw, AlertCircle, Navigation, ExternalLink, Check,
+  Phone, Clock, MessageSquare, ThumbsUp, ThumbsDown, CheckSquare, Sparkles, Send, X
 } from 'lucide-react';
 import { parseGoogleMapsLocation } from '../utils/geoUtils';
 
@@ -20,6 +21,29 @@ export const CustomersView: React.FC = () => {
   const tariffs = dataService.getTariffs();
   const regions = dataService.getRegions();
   const uniqueRWs: string[] = Array.from(new Set(regions.map(r => r.rwCode))).sort();
+
+  // Sub Tab Navigation
+  const [mainTab, setMainTab] = useState<'REGISTERED' | 'APPLICATIONS'>('REGISTERED');
+
+  // Customer Registrations (Pendaftaran Mandiri Warga)
+  const registrations = dataService.getCustomerRegistrations();
+  const pendingRegsCount = dataService.getPendingCustomerRegistrationsCount();
+  const [regFilterStatus, setRegFilterStatus] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
+  const [regSearch, setRegSearch] = useState('');
+
+  // Execution (Approval) Modal States
+  const [executingReg, setExecutingReg] = useState<CustomerRegistration | null>(null);
+  const [execObjectName, setExecObjectName] = useState('Rumah Tinggal');
+  const [execCategoryId, setExecCategoryId] = useState(categories[0]?.id || '');
+  const [executingSuccess, setExecutingSuccess] = useState<{
+    customer: Customer;
+    registration: CustomerRegistration;
+    categoryName: string;
+  } | null>(null);
+
+  // Rejection Modal States
+  const [rejectingReg, setRejectingReg] = useState<CustomerRegistration | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   // Search & Filter
   const [search, setSearch] = useState('');
@@ -221,6 +245,63 @@ export const CustomersView: React.FC = () => {
     setRefreshKey(prev => prev + 1);
   };
 
+  const handleApproveRegistration = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!executingReg) return;
+    try {
+      const selectedCategory = categories.find(c => c.id === execCategoryId) || categories[0];
+      const selectedTariff = tariffs.find(t => t.categoryId === selectedCategory?.id) || tariffs[0];
+
+      const res = dataService.approveCustomerRegistration(
+        executingReg.id,
+        {
+          categoryId: selectedCategory?.id,
+          tariffId: selectedTariff?.id,
+          objectName: execObjectName || 'Rumah Tinggal'
+        },
+        currentUser
+      );
+
+      setExecutingSuccess({
+        customer: res.customer,
+        registration: executingReg,
+        categoryName: selectedCategory?.name || 'Rumah Tangga'
+      });
+      setExecutingReg(null);
+      setRefreshKey(prev => prev + 1);
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengeksekusi pendaftaran');
+    }
+  };
+
+  const handleRejectRegistration = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rejectingReg) return;
+    if (!rejectReason.trim()) {
+      alert('Mohon cantumkan alasan penolakan.');
+      return;
+    }
+    try {
+      dataService.rejectCustomerRegistration(rejectingReg.id, rejectReason.trim(), currentUser);
+      setRejectingReg(null);
+      setRejectReason('');
+      setRefreshKey(prev => prev + 1);
+      alert('Permintaan pendaftaran telah ditolak.');
+    } catch (err: any) {
+      alert(err.message || 'Gagal menolak pendaftaran');
+    }
+  };
+
+  const filteredRegistrations = registrations.filter(r => {
+    if (regFilterStatus !== 'ALL' && r.status !== regFilterStatus) return false;
+    if (regSearch.trim()) {
+      const q = regSearch.toLowerCase();
+      const match = r.name.toLowerCase().includes(q) || r.phone.includes(q) || r.address.toLowerCase().includes(q) || r.rw.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header */}
@@ -245,8 +326,44 @@ export const CustomersView: React.FC = () => {
         )}
       </div>
 
-      {/* Filters & Search */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row gap-3">
+      {/* Sub Tabs: Pelanggan Terdaftar vs Permintaan Pendaftaran */}
+      <div className="flex border-b border-slate-200 gap-2">
+        <button
+          type="button"
+          onClick={() => setMainTab('REGISTERED')}
+          className={`pb-3 px-4 text-xs font-bold transition-all relative flex items-center gap-2 cursor-pointer ${
+            mainTab === 'REGISTERED'
+              ? 'text-brand-800 border-b-2 border-brand-600'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Pelanggan Terdaftar ({customers.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMainTab('APPLICATIONS')}
+          className={`pb-3 px-4 text-xs font-bold transition-all relative flex items-center gap-2 cursor-pointer ${
+            mainTab === 'APPLICATIONS'
+              ? 'text-brand-800 border-b-2 border-brand-600'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <UserPlus className="w-4 h-4" />
+          <span>Permintaan Pendaftaran Warga</span>
+          {pendingRegsCount > 0 && (
+            <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-2xs">
+              {pendingRegsCount} Baru
+            </span>
+          )}
+        </button>
+      </div>
+
+      {mainTab === 'REGISTERED' ? (
+        <>
+        {/* Filters & Search */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -390,6 +507,254 @@ export const CustomersView: React.FC = () => {
           </table>
         </div>
       </div>
+      </>
+      ) : (
+        /* ================= TAB PERMINTAAN PENDAFTARAN WARGA ================= */
+        <div className="space-y-4">
+          {/* Toolbar & Filters */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Cari nama pemohon, nomor WhatsApp, alamat, atau RW..."
+                value={regSearch}
+                onChange={(e) => setRegSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-brand-500"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setRegFilterStatus('ALL')}
+                className={`px-3 py-1.5 rounded-lg transition ${
+                  regFilterStatus === 'ALL'
+                    ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Semua ({registrations.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setRegFilterStatus('PENDING')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  regFilterStatus === 'PENDING'
+                    ? 'bg-white text-amber-900 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>Menunggu Eksekusi</span>
+                {pendingRegsCount > 0 && (
+                  <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                    {pendingRegsCount}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRegFilterStatus('APPROVED')}
+                className={`px-3 py-1.5 rounded-lg transition ${
+                  regFilterStatus === 'APPROVED'
+                    ? 'bg-white text-emerald-900 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Disetujui ({registrations.filter(r => r.status === 'APPROVED').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setRegFilterStatus('REJECTED')}
+                className={`px-3 py-1.5 rounded-lg transition ${
+                  regFilterStatus === 'REJECTED'
+                    ? 'bg-white text-rose-900 shadow-2xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Ditolak ({registrations.filter(r => r.status === 'REJECTED').length})
+              </button>
+            </div>
+          </div>
+
+          {/* List Permintaan */}
+          {filteredRegistrations.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center text-slate-400">
+              <UserPlus className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-sm font-bold text-slate-600">Tidak ada data pendaftaran warga</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {regSearch ? 'Tidak ada pendaftaran yang cocok dengan filter pencarian.' : 'Belum ada permintaan pendaftaran baru dari warga.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredRegistrations.map((reg) => (
+                <div
+                  key={reg.id}
+                  className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    {/* Header Card */}
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-extrabold text-sm text-slate-900">{reg.name}</h3>
+                          <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-md">
+                            {reg.rw} / {reg.rt}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Daftar: {new Date(reg.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </p>
+                      </div>
+
+                      {/* Status Badge */}
+                      {reg.status === 'PENDING' && (
+                        <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full border border-amber-200 flex items-center gap-1 shrink-0">
+                          <Clock className="w-3 h-3" />
+                          <span>Menunggu Eksekusi</span>
+                        </span>
+                      )}
+                      {reg.status === 'APPROVED' && (
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1 shrink-0">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Disetujui</span>
+                        </span>
+                      )}
+                      {reg.status === 'REJECTED' && (
+                        <span className="bg-rose-100 text-rose-800 text-[10px] font-bold px-2.5 py-1 rounded-full border border-rose-200 flex items-center gap-1 shrink-0">
+                          <XCircle className="w-3 h-3" />
+                          <span>Ditolak</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Details Info */}
+                    <div className="space-y-2 text-xs">
+                      {/* WhatsApp / Telepon */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-slate-400" />
+                          <span>No. WhatsApp:</span>
+                        </span>
+                        <a
+                          href={`https://wa.me/62${reg.phone.replace(/\D/g, '').replace(/^0/, '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-mono font-semibold text-emerald-700 hover:text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-1"
+                          title="Hubungi via WhatsApp"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          <span>{reg.phone}</span>
+                        </a>
+                      </div>
+
+                      {/* Alamat */}
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-slate-500 shrink-0 flex items-center gap-1.5">
+                          <Home className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Alamat:</span>
+                        </span>
+                        <span className="font-medium text-slate-800 text-right">{reg.address}</span>
+                      </div>
+
+                      {/* Google Maps Lokasi */}
+                      {(reg.googleMapsUrl || (reg.latitude && reg.longitude)) && (
+                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                          <span className="text-slate-500 flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-red-500" />
+                            <span>Titik Peta:</span>
+                          </span>
+                          <a
+                            href={reg.googleMapsUrl || `https://maps.google.com/?q=${reg.latitude},${reg.longitude}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition"
+                          >
+                            <span>Buka Google Maps</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Catatan Patokan */}
+                      {reg.notes && (
+                        <div className="p-2 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-600 italic">
+                          "{reg.notes}"
+                        </div>
+                      )}
+
+                      {/* Info Persetujuan atau Penolakan */}
+                      {reg.status === 'APPROVED' && (
+                        <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-900 space-y-1">
+                          <div className="flex justify-between font-semibold">
+                            <span>ID Pelanggan Diterbitkan:</span>
+                            <span className="font-mono text-emerald-800 font-bold">{reg.createdCustomerCode || '-'}</span>
+                          </div>
+                          <div className="text-[10px] text-emerald-700">
+                            Disetujui oleh: {reg.processedByName || 'Petugas'} ({reg.processedAt ? new Date(reg.processedAt).toLocaleDateString('id-ID') : '-'})
+                          </div>
+                        </div>
+                      )}
+
+                      {reg.status === 'REJECTED' && (
+                        <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-[11px] text-rose-900">
+                          <strong>Alasan Ditolak:</strong> {reg.rejectionReason || 'Tidak memenuhi ketentuan pendaftaran'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="pt-4 border-t border-slate-100 mt-4 flex items-center gap-2">
+                    {reg.status === 'PENDING' ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRejectingReg(reg);
+                            setRejectReason('');
+                          }}
+                          className="flex-1 py-2 px-3 border border-rose-200 hover:bg-rose-50 text-rose-700 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>Tolak</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExecutingReg(reg);
+                            setExecObjectName('Rumah Tinggal');
+                            setExecCategoryId(categories[0]?.id || '');
+                          }}
+                          className="flex-2 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-xl text-xs transition shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Eksekusi &amp; Setujui</span>
+                        </button>
+                      </>
+                    ) : reg.status === 'APPROVED' ? (
+                      <a
+                        href={`https://wa.me/62${reg.phone.replace(/\D/g, '').replace(/^0/, '')}?text=${encodeURIComponent(
+                          `Halo Bapak/Ibu ${reg.name}, pendaftaran Anda di RESIK ${dataService.getSettings().bumdesName} telah aktif!\n\nID Pelanggan: *${reg.createdCustomerCode}*\nPIN Awal: *1234*\n\nSilakan login untuk mengecek status layanan Anda: ${dataService.getSettings().website || 'https://bumdesgedangan.id'}`
+                        )}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Kirim Info Login via WhatsApp</span>
+                      </a>
+                    ) : (
+                      <span className="text-[11px] text-slate-400 italic">Pendaftaran telah ditutup.</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ================= ADD CUSTOMER MODAL ================= */}
       {addCustomerModalOpen && (
@@ -851,6 +1216,254 @@ export const CustomersView: React.FC = () => {
             >
               Tutup & Selesai
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= EXECUTE REGISTRATION MODAL ================= */}
+      {executingReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 overflow-y-auto max-h-[92vh]">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900">Eksekusi Pendaftaran Pelanggan</h3>
+                  <p className="text-[11px] text-slate-500">Tentukan kategori objek &amp; terbitkan ID Pelanggan resmi</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExecutingReg(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Ringkasan Data Warga */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl mb-4 space-y-1.5 text-xs">
+              <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Data Pemohon Warga:</div>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Nama:</span>
+                  <span className="font-semibold text-slate-800">{executingReg.name}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">No. WhatsApp:</span>
+                  <span className="font-semibold text-slate-800">{executingReg.phone}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Wilayah:</span>
+                  <span className="font-semibold text-slate-800">{executingReg.rw} / {executingReg.rt}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Alamat:</span>
+                  <span className="font-semibold text-slate-800 truncate block">{executingReg.address}</span>
+                </div>
+              </div>
+              {(executingReg.googleMapsUrl || (executingReg.latitude && executingReg.longitude)) && (
+                <div className="pt-1 text-[11px]">
+                  <a
+                    href={executingReg.googleMapsUrl || `https://maps.google.com/?q=${executingReg.latitude},${executingReg.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-red-500" />
+                    <span>Cek Titik Rumah di Google Maps</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleApproveRegistration} className="space-y-4 text-xs">
+              {/* Petugas / Admin Decision Fields */}
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Nama Objek Layanan <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={execObjectName}
+                  onChange={(e) => setExecObjectName(e.target.value)}
+                  placeholder="Contoh: Rumah Tinggal / Toko Kelontong / Rumah Induk"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl"
+                />
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Identitas fisik tempat sampah yang akan dilayani.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Kategori Pelanggan &amp; Tarif Iuran <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={execCategoryId}
+                  onChange={(e) => setExecCategoryId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-medium"
+                >
+                  {categories.map((c) => {
+                    const trf = tariffs.find(t => t.categoryId === c.id);
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {c.name} — Rp {(trf?.amount || 0).toLocaleString('id-ID')} / bulan
+                      </option>
+                    );
+                  })}
+                </select>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Tarif iuran bulanan akan otomatis terhubung ke kategori yang dipilih.
+                </p>
+              </div>
+
+              {/* Preview ID Pelanggan dan PIN */}
+              <div className="p-3 bg-brand-50 border border-brand-200 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-brand-700">ID Pelanggan yang Akan Diterbitkan:</span>
+                  <div className="font-mono font-black text-sm text-brand-900 mt-0.5">
+                    {dataService.generateCustomerCode(executingReg.rw)}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-bold text-slate-500">PIN Awal:</span>
+                  <div className="font-mono font-bold text-xs text-slate-700">1234</div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setExecutingReg(null)}
+                  className="px-4 py-2.5 border border-slate-300 rounded-xl text-slate-700 font-semibold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Setujui &amp; Terbitkan Akun</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= EXECUTION SUCCESS MODAL ================= */}
+      {executingSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-inner">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+
+            <div>
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full">
+                Akun Berhasil Diterbitkan
+              </span>
+              <h3 className="text-lg font-black text-slate-900 mt-2">
+                Pelanggan Baru Aktif!
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Data warga <strong>{executingSuccess.customer.name}</strong> telah resmi terdaftar dalam sistem RESIK.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-left text-xs font-mono space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-500">ID Pelanggan:</span>
+                <span className="font-bold text-brand-800 text-sm">{executingSuccess.customer.customerCode}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">PIN Awal:</span>
+                <span className="font-bold text-slate-800">1234</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Kategori:</span>
+                <span className="font-semibold text-slate-800">{executingSuccess.categoryName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">No. WhatsApp:</span>
+                <span className="font-semibold text-slate-800">{executingSuccess.registration.phone}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <a
+                href={`https://wa.me/62${executingSuccess.registration.phone.replace(/\D/g, '').replace(/^0/, '')}?text=${encodeURIComponent(
+                  `Halo Bapak/Ibu ${executingSuccess.customer.name} 👋,\n\nPendaftaran layanan kebersihan Anda di RESIK ${dataService.getSettings().bumdesName} telah DISETUJUI dan AKTIF!\n\nBerikut informasi akun Anda:\n• ID Pelanggan: *${executingSuccess.customer.customerCode}*\n• PIN Keamanan Awal: *1234*\n• Kategori: ${executingSuccess.categoryName}\n\nAnda dapat mengecek tagihan dan status pembayaran secara mandiri di web:\n${dataService.getSettings().website || 'https://bumdesgedangan.id'}\n\nTerima kasih atas kerja samanya dalam menjaga kebersihan lingkungan kita! 🌱`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/30"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Kirim Info Akun via WhatsApp</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setExecutingSuccess(null)}
+                className="w-full py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
+              >
+                Selesai &amp; Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= REJECT REGISTRATION MODAL ================= */}
+      {rejectingReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6">
+            <h3 className="font-bold text-base text-slate-900 mb-1 text-red-600 flex items-center gap-2">
+              <XCircle className="w-5 h-5" />
+              <span>Tolak Pendaftaran Warga</span>
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              Pendaftaran atas nama <strong>{rejectingReg.name}</strong> ({rejectingReg.address}) akan ditandai Ditolak.
+            </p>
+
+            <form onSubmit={handleRejectRegistration} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Alasan Penolakan <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Contoh: Di luar jangkauan armada truk sampah BUMDes / Alamat dan nomor telepon tidak valid"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setRejectingReg(null)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer"
+                >
+                  Konfirmasi Tolak
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

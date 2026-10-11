@@ -3,18 +3,25 @@ import { useAuth } from '../../context/AuthContext';
 import { dataService } from '../../services/dataService';
 import {
   Menu, X, LogOut, User as UserIcon, Shield,
-  CheckCircle2, AlertCircle, RefreshCw, Sparkles, Building2
+  CheckCircle2, AlertCircle, RefreshCw, Sparkles, Building2,
+  Bell, UserPlus, CreditCard, ArrowRight
 } from 'lucide-react';
 
 interface NavbarProps {
   onToggleSidebar: () => void;
   sidebarOpen: boolean;
+  onNavigateTab?: (tab: string) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, sidebarOpen }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, sidebarOpen, onNavigateTab }) => {
   const { currentUser, currentCustomer, role, logout, isCustomer, isStaff, loginStaff, loginCustomer } = useAuth();
   const settings = dataService.getSettings();
   const [showDemoSwitcher, setShowDemoSwitcher] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const pendingRegCount = isStaff ? dataService.getPendingCustomerRegistrationsCount() : 0;
+  const pendingPayCount = isStaff ? dataService.getPayments({ status: 'PENDING' }).length : 0;
+  const totalNotifications = pendingRegCount + pendingPayCount;
 
   const getRoleBadge = () => {
     switch (role) {
@@ -76,6 +83,108 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, sidebarOpen }) 
 
         {/* Right: User Status & Demo Switcher & Logout */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Staff Notification Bell (Pendaftaran Baru & Verifikasi Pembayaran) */}
+          {isStaff && (
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowNotifications(!showNotifications);
+                  setShowDemoSwitcher(false);
+                }}
+                className={`relative p-2 rounded-xl transition border ${
+                  totalNotifications > 0
+                    ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                    : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                }`}
+                title="Pemberitahuan & Notifikasi Tugas"
+              >
+                <Bell className="w-4 h-4" />
+                {totalNotifications > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                    {totalNotifications}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 py-2.5 z-50 text-xs animate-fadeIn">
+                  <div className="px-3.5 pb-2 border-b border-slate-100 flex items-center justify-between">
+                    <span className="font-bold text-slate-800">Notifikasi Petugas &amp; Admin</span>
+                    {totalNotifications > 0 ? (
+                      <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {totalNotifications} Menunggu
+                      </span>
+                    ) : (
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        Semua Selesai
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                    {pendingRegCount > 0 && (
+                      <button
+                        onClick={() => {
+                          setShowNotifications(false);
+                          if (onNavigateTab) onNavigateTab('customers');
+                        }}
+                        className="w-full text-left p-3 hover:bg-slate-50 transition flex items-start gap-2.5 cursor-pointer"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                          <UserPlus className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-bold text-slate-800 flex items-center justify-between">
+                            <span>Pendaftaran Pelanggan Baru</span>
+                            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md font-bold">
+                              {pendingRegCount} Baru
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Warga telah mendaftar mandiri. Klik untuk verifikasi &amp; eksekusi penerbitan ID.
+                          </p>
+                        </div>
+                      </button>
+                    )}
+
+                    {pendingPayCount > 0 && (
+                      <button
+                        onClick={() => {
+                          setShowNotifications(false);
+                          if (onNavigateTab) onNavigateTab('verification');
+                        }}
+                        className="w-full text-left p-3 hover:bg-slate-50 transition flex items-start gap-2.5 cursor-pointer"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                          <CreditCard className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-bold text-slate-800 flex items-center justify-between">
+                            <span>Verifikasi Pembayaran Transfer/QRIS</span>
+                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md font-bold">
+                              {pendingPayCount} Menunggu
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Terdapat bukti transfer yang perlu diverifikasi agar tagihan lunas.
+                          </p>
+                        </div>
+                      </button>
+                    )}
+
+                    {totalNotifications === 0 && (
+                      <div className="p-4 text-center text-slate-400">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-1.5" />
+                        <p className="text-xs font-semibold text-slate-600">Tidak ada tugas tertunda</p>
+                        <p className="text-[10px] text-slate-400">Semua pendaftaran dan pembayaran telah selesai diproses.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Demo Quick Role Switcher Button */}
           <div className="relative">
             <button

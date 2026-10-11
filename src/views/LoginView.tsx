@@ -4,8 +4,9 @@ import { dataService } from '../services/dataService';
 import { SocialBrandIcon, getSocialBadgeStyle } from '../components/common/SocialBrandIcon';
 import {
   Eye, EyeOff, MessageSquare, Camera, Share2,
-  Video, Mail, MapPin, ArrowRight, ShieldCheck, Lock, UserCheck
+  Video, Mail, MapPin, ArrowRight, ShieldCheck, Lock, UserCheck, UserPlus
 } from 'lucide-react';
+import { RegisterCustomerModal } from '../components/common/RegisterCustomerModal';
 
 export const LoginView: React.FC = () => {
   const { loginCustomer, loginStaff, rateLimitCooldownSeconds } = useAuth();
@@ -28,6 +29,7 @@ export const LoginView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [logoError, setLogoError] = useState(false);
+  const [registerModalOpen, setRegisterModalOpen] = useState(false);
 
   const handleCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,6 +210,21 @@ export const LoginView: React.FC = () => {
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
+                {/* Tombol DAFTAR MENJADI PELANGGAN */}
+                <div className="pt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setRegisterModalOpen(true)}
+                    className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 border border-emerald-300 text-emerald-800 rounded-xl text-xs font-bold tracking-wider transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs hover:border-emerald-500"
+                  >
+                    <UserPlus className="w-4 h-4 text-emerald-600" />
+                    <span>DAFTAR MENJADI PELANGGAN</span>
+                  </button>
+                  <p className="text-[10px] text-slate-400 text-center mt-1">
+                    Belum punya ID? Daftarkan rumah Anda secara mandiri di sini.
+                  </p>
+                </div>
+
                 {/* Sample Customer Quick Fill for demo evaluation */}
                 <div className="pt-2 border-t border-slate-100 text-center">
                   <span className="text-[11px] text-slate-400">Uji coba cepat warga:</span>
@@ -363,6 +380,12 @@ export const LoginView: React.FC = () => {
           "Iuran Mudah, Lingkungan Bersih." • {settings.bumdesName}
         </p>
       </div>
+
+      {/* Modal Pendaftaran Pelanggan Baru */}
+      <RegisterCustomerModal
+        isOpen={registerModalOpen}
+        onClose={() => setRegisterModalOpen(false)}
+      />
     </div>
   );
 };

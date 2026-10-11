@@ -234,6 +234,27 @@ CREATE TABLE IF NOT EXISTS system_settings (
     updated_by UUID
 );
 
+-- 17. CUSTOMER REGISTRATIONS (PENDAFTARAN MANDIRI WARGA)
+CREATE TABLE IF NOT EXISTS customer_registrations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    address TEXT NOT NULL,
+    rt TEXT NOT NULL,
+    rw TEXT NOT NULL,
+    google_maps_url TEXT,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    notes TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDING', -- PENDING, APPROVED, REJECTED
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    processed_at TIMESTAMPTZ,
+    processed_by UUID REFERENCES users(id),
+    rejection_reason TEXT,
+    created_customer_id UUID REFERENCES customers(id),
+    created_customer_code TEXT
+);
+
 -- INDEXES FOR FAST QUERYING
 CREATE INDEX IF NOT EXISTS idx_customers_code ON customers(customer_code);
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
@@ -245,6 +266,8 @@ CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
 CREATE INDEX IF NOT EXISTS idx_service_locations_cust ON service_locations(customer_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_customer_reg_status ON customer_registrations(status);
+CREATE INDEX IF NOT EXISTS idx_customer_reg_phone ON customer_registrations(phone);
 
 -- ROW LEVEL SECURITY (RLS) ENABLEMENT
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
@@ -256,3 +279,5 @@ ALTER TABLE bank_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organization_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customer_registrations ENABLE ROW LEVEL SECURITY;
+

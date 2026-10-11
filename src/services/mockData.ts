@@ -1,7 +1,8 @@
 import {
   User, Customer, ServiceLocation, Bill, Payment, BankAccount,
   OrganizationLink, MessageTemplate, Broadcast, AuditLog,
-  SystemSettings, Region, Category, Tariff, Permission, Role
+  SystemSettings, Region, Category, Tariff, Permission, Role,
+  CustomerRegistration
 } from '../types';
 
 export const INITIAL_SYSTEM_SETTINGS: SystemSettings = {
@@ -694,5 +695,40 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
     entityId: 'ba-1',
     newData: { bankName: 'Bank Jateng', accountNumber: '1234567890' },
     createdAt: '2026-10-01T09:00:00Z'
+  }
+];
+
+export const INITIAL_CUSTOMER_REGISTRATIONS: CustomerRegistration[] = [
+  {
+    id: 'reg-001',
+    name: 'Bapak Hendra Gunawan',
+    phone: '081298765432',
+    address: 'Jl. Garuda No. 18, RT 02 RW 01',
+    rt: 'RT 02',
+    rw: 'RW 01',
+    googleMapsUrl: 'https://maps.google.com/?q=-7.382100,112.723100',
+    latitude: -7.3821,
+    longitude: 112.7231,
+    notes: 'Rumah pagar hitam samping masjid Baiturrahman',
+    status: 'PENDING',
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    processedAt: null,
+    processedBy: null
+  },
+  {
+    id: 'reg-002',
+    name: 'Ibu Ratna Kumalasari',
+    phone: '085712345678',
+    address: 'Jl. Melati Blok C No. 5, RT 01 RW 02',
+    rt: 'RT 01',
+    rw: 'RW 02',
+    googleMapsUrl: 'https://maps.google.com/?q=-7.384500,112.725200',
+    latitude: -7.3845,
+    longitude: 112.7252,
+    notes: 'Toko kelontong berkah',
+    status: 'PENDING',
+    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    processedAt: null,
+    processedBy: null
   }
 ];

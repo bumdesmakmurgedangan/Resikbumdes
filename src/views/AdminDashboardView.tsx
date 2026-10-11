@@ -4,7 +4,7 @@ import { dataService } from '../services/dataService';
 import { WhatsAppPreviewModal } from '../components/common/WhatsAppPreviewModal';
 import {
   Users, CheckCircle2, Clock, AlertTriangle, ArrowUpRight,
-  TrendingUp, MessageSquare, AlertCircle, ShieldAlert, DollarSign
+  TrendingUp, MessageSquare, AlertCircle, ShieldAlert, DollarSign, UserPlus
 } from 'lucide-react';
 
 interface AdminDashboardViewProps {
@@ -18,6 +18,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onNaviga
   const stats = dataService.getDashboardStats();
   const overdueCustomers = dataService.getOverdueCustomers().slice(0, 5); // top 5 for quick action
   const pendingPayments = dataService.getPayments({ status: 'PENDING' });
+  const pendingRegistrationsCount = dataService.getPendingCustomerRegistrationsCount();
 
   // WhatsApp preview modal state
   const [waModalData, setWaModalData] = useState<ReturnType<typeof dataService.prepareWhatsAppReminder> | null>(null);
@@ -75,6 +76,35 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onNaviga
             className="px-5 py-2.5 bg-white text-amber-900 hover:bg-amber-50 rounded-xl text-xs font-black transition shrink-0 flex items-center justify-center gap-1.5 shadow-sm"
           >
             <span>Periksa Sekarang</span>
+            <ArrowUpRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Customer Registration Alert Banner */}
+      {pendingRegistrationsCount > 0 && (
+        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-brand-700 text-white rounded-2xl p-4 sm:p-5 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <UserPlus className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <div className="inline-block bg-white/25 text-white text-[10px] font-black px-2 py-0.5 rounded-full mb-1 uppercase tracking-wider">
+                Pendaftaran Warga Baru
+              </div>
+              <h2 className="font-bold text-base leading-tight">
+                Terdapat {pendingRegistrationsCount} Permintaan Pendaftaran Pelanggan Baru Menunggu Eksekusi
+              </h2>
+              <p className="text-xs text-emerald-100 mt-0.5">
+                Warga telah mengisi formulir mandiri &amp; titik lokasi rumah. Tentukan kategori/tarif dan terbitkan ID Pelanggan.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigateTab('customers')}
+            className="px-5 py-2.5 bg-white text-emerald-900 hover:bg-emerald-50 rounded-xl text-xs font-black transition shrink-0 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+          >
+            <span>Eksekusi Pendaftaran</span>
             <ArrowUpRight className="w-4 h-4" />
           </button>
         </div>

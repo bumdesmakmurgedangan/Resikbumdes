@@ -2,14 +2,16 @@ import {
   User, Customer, ServiceLocation, Bill, Payment, BankAccount,
   OrganizationLink, MessageTemplate, Broadcast, AuditLog,
   SystemSettings, Region, Category, Tariff, Permission, Role,
-  BillStatus, PaymentMethod, PaymentStatus, ImportItem, ImportError, Receipt
+  BillStatus, PaymentMethod, PaymentStatus, ImportItem, ImportError, Receipt,
+  CustomerRegistration, RegistrationStatus
 } from '../types';
 import {
   INITIAL_SYSTEM_SETTINGS, INITIAL_PERMISSIONS, INITIAL_ROLES,
   INITIAL_USERS, INITIAL_BANK_ACCOUNTS, INITIAL_ORGANIZATION_LINKS,
   INITIAL_MESSAGE_TEMPLATES, INITIAL_CATEGORIES, INITIAL_TARIFFS,
   INITIAL_REGIONS, INITIAL_CUSTOMERS, INITIAL_SERVICE_LOCATIONS,
-  INITIAL_BILLS, INITIAL_PAYMENTS, INITIAL_BROADCASTS, INITIAL_AUDIT_LOGS
+  INITIAL_BILLS, INITIAL_PAYMENTS, INITIAL_BROADCASTS, INITIAL_AUDIT_LOGS,
+  INITIAL_CUSTOMER_REGISTRATIONS
 } from './mockData';
 import * as XLSX from 'xlsx';
 import { parseGoogleMapsLocation } from '../utils/geoUtils';
@@ -23,6 +25,7 @@ const STORAGE_KEYS = {
   BILLS: 'resik_bills',
   PAYMENTS: 'resik_payments',
   BANK_ACCOUNTS: 'resik_bank_accounts',
+  REGISTRATIONS: 'resik_customer_registrations',
   ORG_LINKS: 'resik_org_links',
   TEMPLATES: 'resik_templates',
   REGIONS: 'resik_regions',
@@ -51,6 +54,7 @@ class DataService {
   private broadcasts: Broadcast[];
   private auditLogs: AuditLog[];
   private receiptSeq: number;
+  private registrations: CustomerRegistration[];
 
   constructor() {
     this.settings = this.load(STORAGE_KEYS.SETTINGS, INITIAL_SYSTEM_SETTINGS);
@@ -94,6 +98,7 @@ class DataService {
     this.broadcasts = this.load(STORAGE_KEYS.BROADCASTS, INITIAL_BROADCASTS);
     this.auditLogs = this.load(STORAGE_KEYS.AUDIT_LOGS, INITIAL_AUDIT_LOGS);
     this.receiptSeq = this.load(STORAGE_KEYS.RECEIPT_SEQ, 150);
+    this.registrations = this.load(STORAGE_KEYS.REGISTRATIONS, INITIAL_CUSTOMER_REGISTRATIONS);
 
     // Run automatic overdue detection on initialization
     this.updateOverdueStatus();
@@ -603,6 +608,146 @@ class DataService {
     this.save(STORAGE_KEYS.CUSTOMERS, this.customers);
     this.logAudit(customerId, cust.name, 'CUSTOMER_PIN_CHANGED', 'CUSTOMER', customerId);
     return true;
+  }
+
+  // ----------------------------------------------------
+  // CUSTOMER REGISTRATIONS (PENDAFTARAN WARGA MANDIRI)
+  // ----------------------------------------------------
+  public getCustomerRegistrations(status?: RegistrationStatus): CustomerRegistration[] {
+    const list = [...this.registrations].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    if (status) {
+      return list.filter(r => r.status === status);
+    }
+    return list;
+  }
+
+  public getPendingCustomerRegistrationsCount(): number {
+    return this.registrations.filter(r => r.status === 'PENDING').length;
+  }
+
+  public createCustomerRegistration(data: {
+    name: string;
+    phone: string;
+    address: string;
+    rt: string;
+    rw: string;
+    googleMapsUrl?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+    notes?: string;
+  }): CustomerRegistration {
+    const newReg: CustomerRegistration = {
+      id: 'reg-' + Date.now(),
+      name: data.name.trim(),
+      phone: data.phone.trim(),
+      address: data.address.trim(),
+      rt: data.rt.trim(),
+      rw: data.rw.trim(),
+      googleMapsUrl: data.googleMapsUrl?.trim(),
+      latitude: data.latitude,
+      longitude: data.longitude,
+      notes: data.notes?.trim(),
+      status: 'PENDING',
+      createdAt: new Date().toISOString()
+    };
+    this.registrations.unshift(newReg);
+    this.save(STORAGE_KEYS.REGISTRATIONS, this.registrations);
+    return newReg;
+  }
+
+  public approveCustomerRegistration(
+    registrationId: string,
+    approvalData: {
+      categoryId: string;
+      tariffId: string;
+      objectName?: string;
+    },
+    actorUser: User
+  ): { customer: Customer; service: ServiceLocation } {
+    const reg = this.registrations.find(r => r.id === registrationId);
+    if (!reg) throw new Error('Data pendaftaran tidak ditemukan');
+    if (reg.status !== 'PENDING') throw new Error('Pendaftaran sudah diproses sebelumnya');
+
+    // 1. Generate Customer Code and Create Customer
+    const customerCode = this.generateCustomerCode(reg.rw);
+    const newCust = this.saveCustomer({
+      customerCode,
+      name: reg.name,
+      phone: reg.phone,
+      address: reg.address,
+      pinHash: '1234',
+      isDefaultPin: true,
+      status: 'ACTIVE'
+    }, actorUser);
+
+    // 2. Create Service Location
+    const category = this.categories.find(c => c.id === approvalData.categoryId) || this.categories[0];
+    const tariff = this.tariffs.find(t => t.id === approvalData.tariffId) || this.tariffs.find(t => t.categoryId === category?.id) || this.tariffs[0];
+
+    const newService = this.saveServiceLocation({
+      customerId: newCust.id,
+      name: approvalData.objectName?.trim() || 'Rumah Tinggal',
+      address: reg.address,
+      rt: reg.rt,
+      rw: reg.rw,
+      categoryId: category?.id,
+      tariffId: tariff?.id,
+      latitude: reg.latitude ?? undefined,
+      longitude: reg.longitude ?? undefined
+    }, actorUser);
+
+    // 3. Generate initial bill for current month if needed
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const existingBill = this.bills.find(b => b.serviceId === newService.id && b.billingYear === currentYear && b.billingMonth === currentMonth);
+    if (!existingBill && tariff) {
+      const dueDay = this.settings.defaultDueDay || 10;
+      const dueDate = new Date(currentYear, currentMonth - 1, dueDay).toISOString().split('T')[0];
+      this.bills.push({
+        id: 'bill-' + Date.now(),
+        serviceId: newService.id,
+        billingYear: currentYear,
+        billingMonth: currentMonth,
+        amount: tariff.amount,
+        dueDate,
+        status: 'UNPAID',
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString()
+      });
+      this.save(STORAGE_KEYS.BILLS, this.bills);
+    }
+
+    // 4. Update registration record
+    reg.status = 'APPROVED';
+    reg.processedAt = now.toISOString();
+    reg.processedBy = actorUser.id;
+    reg.processedByName = actorUser.fullName;
+    reg.createdCustomerId = newCust.id;
+    reg.createdCustomerCode = customerCode;
+    this.save(STORAGE_KEYS.REGISTRATIONS, this.registrations);
+
+    this.logAudit(actorUser.id, actorUser.fullName, 'REGISTRATION_APPROVED', 'CUSTOMER', newCust.id, null, {
+      registrationId,
+      customerCode,
+      name: reg.name
+    });
+
+    return { customer: newCust, service: newService };
+  }
+
+  public rejectCustomerRegistration(registrationId: string, reason: string, actorUser: User): CustomerRegistration {
+    const reg = this.registrations.find(r => r.id === registrationId);
+    if (!reg) throw new Error('Data pendaftaran tidak ditemukan');
+    reg.status = 'REJECTED';
+    reg.rejectionReason = reason;
+    reg.processedAt = new Date().toISOString();
+    reg.processedBy = actorUser.id;
+    reg.processedByName = actorUser.fullName;
+    this.save(STORAGE_KEYS.REGISTRATIONS, this.registrations);
+
+    this.logAudit(actorUser.id, actorUser.fullName, 'REGISTRATION_REJECTED', 'REGISTRATION', registrationId, null, { reason });
+    return reg;
   }
 
   public getServiceLocations(customerId?: string): ServiceLocation[] {

@@ -79,6 +79,7 @@ const MainLayout: React.FC = () => {
       <Navbar
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        onNavigateTab={setActiveTab}
       />
 
       <div className="flex-1 flex max-w-7xl w-full mx-auto">

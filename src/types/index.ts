@@ -57,6 +57,29 @@ export interface Customer {
   updatedAt: string;
 }
 
+export type RegistrationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface CustomerRegistration {
+  id: string;
+  name: string;
+  phone: string;
+  address: string;
+  rt: string;
+  rw: string;
+  googleMapsUrl?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  notes?: string;
+  status: RegistrationStatus;
+  createdAt: string;
+  processedAt?: string | null;
+  processedBy?: string | null;
+  processedByName?: string | null;
+  rejectionReason?: string | null;
+  createdCustomerId?: string | null;
+  createdCustomerCode?: string | null;
+}
+
 export interface Region {
   id: string;
   rwCode: string; // e.g. RW 01
