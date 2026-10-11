@@ -15,8 +15,8 @@ export const LoginView: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'CUSTOMER' | 'STAFF'>('CUSTOMER');
 
-  // Customer form state
-  const [customerCode, setCustomerCode] = useState('');
+  // Customer form state (Mendukung ID Pelanggan maupun Nomor HP)
+  const [customerIdentifier, setCustomerIdentifier] = useState('');
   const [customerPin, setCustomerPin] = useState('');
   const [showPin, setShowPin] = useState(false);
 
@@ -37,7 +37,7 @@ export const LoginView: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await loginCustomer(customerCode, customerPin);
+      const res = await loginCustomer(customerIdentifier, customerPin);
       if (!res.success) {
         setErrorMessage(res.message || 'Login gagal. Periksa data Anda.');
       }
@@ -63,8 +63,8 @@ export const LoginView: React.FC = () => {
 
 
   // Quick fill buttons for testing/demo
-  const fillSampleCustomer = (code: string, pin: string) => {
-    setCustomerCode(code);
+  const fillSampleCustomer = (idOrPhone: string, pin: string) => {
+    setCustomerIdentifier(idOrPhone);
     setCustomerPin(pin);
     setErrorMessage(null);
   };
@@ -156,18 +156,18 @@ export const LoginView: React.FC = () => {
               <form onSubmit={handleCustomerSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    ID Pelanggan
+                    ID Pelanggan atau Nomor HP
                   </label>
                   <input
                     type="text"
-                    value={customerCode}
-                    onChange={(e) => setCustomerCode(e.target.value.toUpperCase())}
-                    placeholder="Contoh: PLG-RW03-0025"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm font-mono uppercase tracking-wide focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition"
+                    value={customerIdentifier}
+                    onChange={(e) => setCustomerIdentifier(e.target.value)}
+                    placeholder="Contoh: PLG-RW03-0025 atau 081234567890"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm font-medium tracking-wide focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition"
                     required
                   />
                   <p className="text-[11px] text-slate-400 mt-1">
-                    Sesuai kartu/kode pelanggan yang terdaftar di BUMDes
+                    Bisa masuk menggunakan <strong>ID Pelanggan</strong> atau <strong>Nomor HP/WhatsApp</strong> yang didaftarkan
                   </p>
                 </div>
 
@@ -227,21 +227,31 @@ export const LoginView: React.FC = () => {
 
                 {/* Sample Customer Quick Fill for demo evaluation */}
                 <div className="pt-2 border-t border-slate-100 text-center">
-                  <span className="text-[11px] text-slate-400">Uji coba cepat warga:</span>
-                  <div className="flex flex-wrap justify-center gap-2 mt-1.5">
+                  <span className="text-[11px] text-slate-400">Uji coba cepat login warga:</span>
+                  <div className="flex flex-wrap justify-center gap-1.5 mt-1.5">
                     <button
                       type="button"
                       onClick={() => fillSampleCustomer('PLG-RW03-0025', '1234')}
                       className="text-[11px] bg-slate-100 hover:bg-brand-100 hover:text-brand-800 text-slate-600 px-2.5 py-1 rounded-lg font-mono transition"
+                      title="Login pakai ID Pelanggan"
                     >
-                      Budi (Multi-Layanan)
+                      ID: PLG-RW03-0025
                     </button>
                     <button
                       type="button"
-                      onClick={() => fillSampleCustomer('PLG-RW02-0012', '4321')}
-                      className="text-[11px] bg-slate-100 hover:bg-brand-100 hover:text-brand-800 text-slate-600 px-2.5 py-1 rounded-lg font-mono transition"
+                      onClick={() => fillSampleCustomer('081234567890', '1234')}
+                      className="text-[11px] bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-900 text-emerald-800 px-2.5 py-1 rounded-lg font-mono font-medium transition border border-emerald-200"
+                      title="Login pakai Nomor HP Budi"
                     >
-                      Sri (Pending Verif)
+                      No HP: 081234567890
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fillSampleCustomer('081398765432', '4321')}
+                      className="text-[11px] bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-900 text-emerald-800 px-2.5 py-1 rounded-lg font-mono font-medium transition border border-emerald-200"
+                      title="Login pakai Nomor HP Ibu Sri"
+                    >
+                      No HP: 081398765432
                     </button>
                   </div>
                 </div>

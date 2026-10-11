@@ -259,6 +259,35 @@ RESIK - {nama_bumdes}
     isActive: true,
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z'
+  },
+  {
+    id: 'mt-2',
+    type: 'WHATSAPP_ACCOUNT_CONFIRMATION',
+    name: 'Konfirmasi Penerbitan Akun Pelanggan Baru',
+    content: `Halo Bapak/Ibu {nama} 👋,
+
+Pendaftaran layanan kebersihan Anda di RESIK {nama_bumdes} telah DISETUJUI dan AKTIF!
+
+Berikut informasi akun Anda:
+• ID Pelanggan: *{id_pelanggan}*
+• No. HP Terdaftar: *{no_hp}*
+• PIN Keamanan Awal: *{pin_awal}*
+• Kategori: {kategori}
+• Alamat: {alamat}
+
+Anda dapat masuk ke sistem RESIK menggunakan ID Pelanggan ATAU No. HP terdaftar beserta PIN awal di:
+{link_web}
+
+Silakan masuk untuk mengecek jadwal penarikan, riwayat iuran, atau pembayaran mandiri secara praktis.
+Mohon segera ganti PIN Anda setelah berhasil masuk untuk keamanan akun.
+
+Terima kasih atas kerja samanya dalam menjaga kebersihan lingkungan kita! 🌱
+
+Salam hangat,
+Pengurus {nama_bumdes}`,
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z'
   }
 ];
 

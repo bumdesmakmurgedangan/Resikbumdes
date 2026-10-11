@@ -10,7 +10,7 @@ export type PaymentStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
 
 export type SocialType = 'WHATSAPP' | 'INSTAGRAM' | 'TIKTOK' | 'FACEBOOK' | 'WEBSITE' | 'EMAIL' | 'MAP';
 
-export type TemplateType = 'WHATSAPP_OVERDUE_REMINDER';
+export type TemplateType = 'WHATSAPP_OVERDUE_REMINDER' | 'WHATSAPP_ACCOUNT_CONFIRMATION';
 
 export type ReminderStatus = 'PREPARED' | 'OPENED';
 

@@ -735,9 +735,13 @@ export const CustomersView: React.FC = () => {
                       </>
                     ) : reg.status === 'APPROVED' ? (
                       <a
-                        href={`https://wa.me/62${reg.phone.replace(/\D/g, '').replace(/^0/, '')}?text=${encodeURIComponent(
-                          `Halo Bapak/Ibu ${reg.name}, pendaftaran Anda di RESIK ${dataService.getSettings().bumdesName} telah aktif!\n\nID Pelanggan: *${reg.createdCustomerCode}*\nPIN Awal: *1234*\n\nSilakan login untuk mengecek status layanan Anda: ${dataService.getSettings().website || 'https://bumdesgedangan.id'}`
-                        )}`}
+                        href={dataService.prepareWhatsAppAccountConfirmation({
+                          customerName: reg.name,
+                          customerCode: reg.createdCustomerCode || '',
+                          phone: reg.phone,
+                          address: reg.address,
+                          pin: '1234'
+                        }).waUrl}
                         target="_blank"
                         rel="noreferrer"
                         className="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5"
@@ -1398,16 +1402,24 @@ export const CustomersView: React.FC = () => {
 
             <div className="space-y-2">
               <a
-                href={`https://wa.me/62${executingSuccess.registration.phone.replace(/\D/g, '').replace(/^0/, '')}?text=${encodeURIComponent(
-                  `Halo Bapak/Ibu ${executingSuccess.customer.name} 👋,\n\nPendaftaran layanan kebersihan Anda di RESIK ${dataService.getSettings().bumdesName} telah DISETUJUI dan AKTIF!\n\nBerikut informasi akun Anda:\n• ID Pelanggan: *${executingSuccess.customer.customerCode}*\n• PIN Keamanan Awal: *1234*\n• Kategori: ${executingSuccess.categoryName}\n\nAnda dapat mengecek tagihan dan status pembayaran secara mandiri di web:\n${dataService.getSettings().website || 'https://bumdesgedangan.id'}\n\nTerima kasih atas kerja samanya dalam menjaga kebersihan lingkungan kita! 🌱`
-                )}`}
+                href={dataService.prepareWhatsAppAccountConfirmation({
+                  customerName: executingSuccess.customer.name,
+                  customerCode: executingSuccess.customer.customerCode,
+                  phone: executingSuccess.registration.phone,
+                  pin: '1234',
+                  categoryName: executingSuccess.categoryName,
+                  address: executingSuccess.customer.address
+                }).waUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/30"
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/30 cursor-pointer"
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>Kirim Info Akun via WhatsApp</span>
               </a>
+              <p className="text-[10px] text-slate-400 text-center">
+                *Warga dapat masuk menggunakan ID Pelanggan atau Nomor WhatsApp yang didaftarkan.
+              </p>
 
               <button
                 type="button"

@@ -3,12 +3,13 @@ import { useAuth } from '../context/AuthContext';
 import { dataService } from '../services/dataService';
 import {
   BankAccount, OrganizationLink, Category, Tariff, Region,
-  MessageTemplate, User, RoleType
+  MessageTemplate, User, RoleType, TemplateType
 } from '../types';
 import {
   Settings, Building2, Globe, CreditCard, QrCode, MapPin,
   Tag, Calendar, MessageSquare, Users, Shield, Plus,
-  Edit2, Trash2, Check, X, Database, RefreshCw, Upload, Image
+  Edit2, Trash2, Check, X, Database, RefreshCw, Upload, Image,
+  CheckCircle2, RotateCcw, Smartphone, Sparkles
 } from 'lucide-react';
 import { saveSupabaseConfig, clearSupabaseConfig, getSupabaseConfig } from '../lib/supabase';
 import { SocialBrandIcon, getSocialBadgeStyle } from '../components/common/SocialBrandIcon';
@@ -30,9 +31,27 @@ export const SettingsView: React.FC = () => {
   const categories = dataService.getCategories();
   const tariffs = dataService.getTariffs();
   const regions = dataService.getRegions();
-  const templates = dataService.getMessageTemplates();
+  const [templateList, setTemplateList] = useState<MessageTemplate[]>(dataService.getMessageTemplates());
+  const [selectedTemplateType, setSelectedTemplateType] = useState<TemplateType>('WHATSAPP_ACCOUNT_CONFIRMATION');
+  const [saveSuccessId, setSaveSuccessId] = useState<string | null>(null);
   const users = dataService.getUsers();
   const roles = dataService.getRoles();
+
+  const handleSaveTemplate = (tpl: MessageTemplate) => {
+    dataService.saveMessageTemplate(tpl, currentUser);
+    setTemplateList(dataService.getMessageTemplates());
+    setSaveSuccessId(tpl.id);
+    setTimeout(() => setSaveSuccessId(null), 3000);
+  };
+
+  const handleResetTemplate = (templateId: string) => {
+    if (window.confirm('Kembalikan template ini ke format pesan standar BUMDes?')) {
+      dataService.resetMessageTemplate(templateId, currentUser);
+      setTemplateList(dataService.getMessageTemplates());
+      setSaveSuccessId(templateId);
+      setTimeout(() => setSaveSuccessId(null), 3000);
+    }
+  };
 
   // Supabase runtime config state
   const supabaseConfig = getSupabaseConfig();
@@ -986,37 +1005,286 @@ export const SettingsView: React.FC = () => {
       )}
 
       {/* ================= TAB 6: TEMPLATE WA ================= */}
-      {activeTab === 'TEMPLATES' && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <h2 className="font-bold text-sm text-slate-900">Template Pesan WhatsApp Pengingat (PRD Section 88)</h2>
-          <p className="text-xs text-slate-500">
-            Dapat menggunakan variabel otomatis: <code>{'{nama}'}</code>, <code>{'{id_pelanggan}'}</code>, <code>{'{rincian_tunggakan}'}</code>, <code>{'{total_tunggakan}'}</code>, <code>{'{nama_bumdes}'}</code>, <code>{'{nomor_bumdes}'}</code>.
-          </p>
+      {activeTab === 'TEMPLATES' && (() => {
+        const activeTpl = templateList.find(t => t.type === selectedTemplateType) || templateList[0];
 
-          {templates.map(tpl => (
-            <div key={tpl.id} className="space-y-2">
-              <textarea
-                rows={8}
-                value={tpl.content}
-                onChange={(e) => {
-                  tpl.content = e.target.value;
-                  setRefreshKey(prev => prev + 1);
-                }}
-                className="w-full p-3.5 border border-slate-300 rounded-2xl text-xs font-mono leading-relaxed"
-              />
-              <button
-                onClick={() => {
-                  dataService.saveMessageTemplate(tpl, currentUser);
-                  alert('Template WhatsApp berhasil diperbarui!');
-                }}
-                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-sm"
-              >
-                Simpan Template
-              </button>
+        const confirmationVariables = [
+          { code: '{nama}', label: 'Nama Warga' },
+          { code: '{id_pelanggan}', label: 'ID Pelanggan Baru' },
+          { code: '{no_hp}', label: 'Nomor HP' },
+          { code: '{pin_awal}', label: 'PIN Awal (1234)' },
+          { code: '{kategori}', label: 'Kategori Tarif' },
+          { code: '{alamat}', label: 'Alamat' },
+          { code: '{nama_bumdes}', label: 'Nama BUMDes' },
+          { code: '{nomor_bumdes}', label: 'No. WA BUMDes' },
+          { code: '{link_web}', label: 'Link Website' },
+        ];
+
+        const reminderVariables = [
+          { code: '{nama}', label: 'Nama Warga' },
+          { code: '{id_pelanggan}', label: 'ID Pelanggan' },
+          { code: '{rincian_tunggakan}', label: 'Rincian Bulan & Jumlah' },
+          { code: '{total_tunggakan}', label: 'Total Nominal (Rp)' },
+          { code: '{jumlah_tunggakan}', label: 'Jumlah Bulan' },
+          { code: '{nama_bumdes}', label: 'Nama BUMDes' },
+          { code: '{nomor_bumdes}', label: 'No. WA BUMDes' },
+        ];
+
+        const activeVariables = selectedTemplateType === 'WHATSAPP_ACCOUNT_CONFIRMATION'
+          ? confirmationVariables
+          : reminderVariables;
+
+        const getPreviewText = (rawContent: string): string => {
+          if (!rawContent) return '';
+          if (selectedTemplateType === 'WHATSAPP_ACCOUNT_CONFIRMATION') {
+            return rawContent
+              .replace(/{nama}/g, 'Bapak Hendra Gunawan')
+              .replace(/{id_pelanggan}/g, 'PLG-RW01-0003')
+              .replace(/{no_hp}/g, '081298765432')
+              .replace(/{pin_awal}/g, '1234')
+              .replace(/{kategori}/g, 'Rumah Tangga')
+              .replace(/{alamat}/g, 'Jl. Mawar No. 12, RT 01 / RW 01')
+              .replace(/{nama_bumdes}/g, settings.bumdesName || 'BUMDes Makmur Gedangan')
+              .replace(/{nomor_bumdes}/g, settings.phoneWhatsapp || '085150736692')
+              .replace(/{link_web}/g, settings.website || 'https://bumdesgedangan.id');
+          } else {
+            return rawContent
+              .replace(/{nama}/g, 'Bapak Budi Santoso')
+              .replace(/{id_pelanggan}/g, 'PLG-RW03-0025')
+              .replace(/{total_tunggakan}/g, 'Rp40.000')
+              .replace(/{jumlah_tunggakan}/g, '2 bulan')
+              .replace(/{rincian_tunggakan}/g, '• September 2026 - Rumah (Rp20.000)\n• Oktober 2026 - Rumah (Rp20.000)')
+              .replace(/{nama_bumdes}/g, settings.bumdesName || 'BUMDes Makmur Gedangan')
+              .replace(/{nomor_bumdes}/g, settings.phoneWhatsapp || '085150736692');
+          }
+        };
+
+        const handleInsertVar = (varCode: string) => {
+          if (!activeTpl) return;
+          const updated = { ...activeTpl, content: (activeTpl.content || '') + ' ' + varCode };
+          const idx = templateList.findIndex(t => t.id === activeTpl.id);
+          const next = [...templateList];
+          if (idx >= 0) next[idx] = updated;
+          setTemplateList(next);
+        };
+
+        const handleChangeContent = (val: string) => {
+          if (!activeTpl) return;
+          const updated = { ...activeTpl, content: val };
+          const idx = templateList.findIndex(t => t.id === activeTpl.id);
+          const next = [...templateList];
+          if (idx >= 0) next[idx] = updated;
+          setTemplateList(next);
+        };
+
+        return (
+          <div className="space-y-6">
+            {/* Header Card */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-emerald-100 text-emerald-800 rounded-xl">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <h2 className="font-bold text-base text-slate-900">Format &amp; Template Pesan WhatsApp</h2>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Atur susunan pesan WhatsApp otomatis yang dikirimkan oleh sistem dan petugas ke warga.
+                </p>
+              </div>
+
+              {/* Selector Tabs */}
+              <div className="flex p-1 bg-slate-100 rounded-2xl text-xs font-bold self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTemplateType('WHATSAPP_ACCOUNT_CONFIRMATION')}
+                  className={`px-3.5 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 ${
+                    selectedTemplateType === 'WHATSAPP_ACCOUNT_CONFIRMATION'
+                      ? 'bg-white text-emerald-800 shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Konfirmasi Akun Baru</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTemplateType('WHATSAPP_OVERDUE_REMINDER')}
+                  className={`px-3.5 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 ${
+                    selectedTemplateType === 'WHATSAPP_OVERDUE_REMINDER'
+                      ? 'bg-white text-amber-800 shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span>Pengingat Tunggakan</span>
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+
+            {/* Template Editor & Live Preview Grid */}
+            {activeTpl && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left Column: Editor & Variable Tags */}
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+                    <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                          activeTpl.type === 'WHATSAPP_ACCOUNT_CONFIRMATION'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            : 'bg-amber-100 text-amber-800 border border-amber-200'
+                        }`}>
+                          {activeTpl.type === 'WHATSAPP_ACCOUNT_CONFIRMATION' ? 'Pendaftaran Warga Baru' : 'Penagihan Iuran'}
+                        </span>
+                        <h3 className="font-bold text-sm text-slate-900 mt-1.5">{activeTpl.name}</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {activeTpl.type === 'WHATSAPP_ACCOUNT_CONFIRMATION'
+                            ? 'Pesan otomatis saat Petugas/Admin menyetujui pendaftaran pelanggan mandiri.'
+                            : 'Pesan pengingat tagihan saat pelanggan memiliki iuran yang belum dibayar.'}
+                        </p>
+                      </div>
+
+                      {saveSuccessId === activeTpl.id && (
+                        <div className="flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold animate-fadeIn">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Tersimpan!</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Variable Chips */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                          Variabel Otomatis (Klik untuk Sisipkan):
+                        </label>
+                        <span className="text-[10px] text-slate-400">Variabel diganti data asli saat dikirim</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {activeVariables.map((v) => (
+                          <button
+                            key={v.code}
+                            type="button"
+                            onClick={() => handleInsertVar(v.code)}
+                            title={`Sisipkan ${v.code} (${v.label})`}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 text-slate-700 rounded-lg text-xs font-mono font-medium border border-slate-200 hover:border-emerald-300 transition cursor-pointer flex items-center gap-1"
+                          >
+                            <span>+</span>
+                            <span className="font-bold">{v.code}</span>
+                            <span className="text-[10px] text-slate-500 font-sans">({v.label})</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Textarea Editor */}
+                    <div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                          Isi Template Pesan WhatsApp:
+                        </label>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          {activeTpl.content?.length || 0} karakter
+                        </span>
+                      </div>
+                      <textarea
+                        rows={14}
+                        value={activeTpl.content}
+                        onChange={(e) => handleChangeContent(e.target.value)}
+                        placeholder="Ketik susunan template pesan di sini..."
+                        className="w-full p-4 border border-slate-300 rounded-2xl text-xs font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition shadow-inner bg-slate-50/50"
+                      />
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Tips: Gunakan tanda bintang <code>*teks*</code> untuk teks tebal di WhatsApp.
+                      </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => handleResetTemplate(activeTpl.id)}
+                        className="px-3.5 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Reset ke Standar</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSaveTemplate(activeTpl)}
+                        className="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-xl text-xs font-bold transition shadow-md shadow-brand-600/30 flex items-center gap-2 cursor-pointer"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Simpan Perubahan Template</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Live Mobile WhatsApp Mockup */}
+                <div className="lg:col-span-5 space-y-3">
+                  <div className="bg-[#EFEAE2] rounded-3xl border border-slate-300 overflow-hidden shadow-md flex flex-col">
+                    {/* Mock Phone Header */}
+                    <div className="bg-[#075E54] text-white px-4 py-3 flex items-center justify-between shadow-xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-emerald-800 border border-emerald-400 flex items-center justify-center font-bold text-xs">
+                          🌱
+                        </div>
+                        <div>
+                          <div className="font-bold text-xs truncate max-w-[180px]">
+                            {settings.bumdesName || 'BUMDes Makmur Gedangan'}
+                          </div>
+                          <div className="text-[10px] text-emerald-200 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span>online (Akun Resmi)</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-white/80">
+                        <Smartphone className="w-4 h-4" />
+                      </div>
+                    </div>
+
+                    {/* Chat Bubble Body */}
+                    <div className="p-4 space-y-2 min-h-[360px] max-h-[500px] overflow-y-auto bg-[radial-gradient(#0000000a_1px,transparent_1px)] [background-size:16px_16px]">
+                      {/* Date Pill */}
+                      <div className="flex justify-center my-2">
+                        <span className="bg-white/80 backdrop-blur-xs text-slate-600 text-[10px] px-3 py-1 rounded-full shadow-2xs font-medium">
+                          HARI INI
+                        </span>
+                      </div>
+
+                      {/* Outgoing Message Bubble */}
+                      <div className="flex justify-end">
+                        <div className="max-w-[92%] bg-[#DCF8C6] text-slate-800 rounded-2xl rounded-tr-xs p-3.5 shadow-xs border border-emerald-200/50 text-xs leading-relaxed space-y-1">
+                          <p className="whitespace-pre-wrap font-sans text-[11.5px] select-text">
+                            {getPreviewText(activeTpl.content)}
+                          </p>
+                          <div className="flex items-center justify-end gap-1 text-[9.5px] text-slate-400 font-mono mt-1 pt-1">
+                            <span>10:45</span>
+                            <span className="text-sky-500 font-bold">✓✓</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mock Input Bar */}
+                    <div className="p-2.5 bg-[#F0F2F5] border-t border-slate-200 text-center">
+                      <p className="text-[11px] text-slate-500 font-medium">
+                        📱 Pratinjau Tampilan Pesan di HP Warga
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Pesan di atas akan otomatis dikirim saat petugas mengklik tombol &quot;Kirim via WhatsApp&quot;.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ================= TAB 7: USERS & ROLES ================= */}
       {activeTab === 'USERS' && (

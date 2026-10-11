@@ -110,8 +110,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRateLimitCooldownSeconds(0);
   };
 
-  // Customer Login (ID Pelanggan + 4 Digit PIN)
-  const loginCustomer = async (code: string, pin: string): Promise<{ success: boolean; message?: string }> => {
+  // Customer Login (ID Pelanggan ATAU No HP + 4 Digit PIN)
+  const loginCustomer = async (codeOrPhone: string, pin: string): Promise<{ success: boolean; message?: string }> => {
     if (rateLimitCooldownSeconds > 0) {
       return {
         success: false,
@@ -119,20 +119,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
-    const cleanCode = code.trim().toUpperCase();
+    const cleanIdentifier = codeOrPhone.trim();
     const cleanPin = pin.trim();
 
-    if (!cleanCode) {
-      return { success: false, message: 'ID Pelanggan wajib diisi.' };
+    if (!cleanIdentifier) {
+      return { success: false, message: 'ID Pelanggan atau Nomor HP wajib diisi.' };
     }
     if (!cleanPin) {
       return { success: false, message: 'PIN 4-digit wajib diisi.' };
     }
 
-    const customer = dataService.getCustomerByCode(cleanCode);
+    const customer = dataService.getCustomerByCodeOrPhone(cleanIdentifier);
     if (!customer) {
       recordFailedAttempt();
-      return { success: false, message: 'ID Pelanggan tidak ditemukan. Silakan periksa kembali atau hubungi BUMDes.' };
+      return { success: false, message: 'ID Pelanggan atau Nomor HP tidak ditemukan dalam sistem. Silakan periksa kembali atau daftar baru.' };
     }
 
     if (customer.status !== 'ACTIVE') {

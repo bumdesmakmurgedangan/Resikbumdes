@@ -67,6 +67,12 @@ class DataService {
     this.payments = this.load(STORAGE_KEYS.PAYMENTS, INITIAL_PAYMENTS);
     this.bankAccounts = this.load(STORAGE_KEYS.BANK_ACCOUNTS, INITIAL_BANK_ACCOUNTS);
     this.templates = this.load(STORAGE_KEYS.TEMPLATES, INITIAL_MESSAGE_TEMPLATES);
+    // Ensure new initial templates exist in cached storage
+    INITIAL_MESSAGE_TEMPLATES.forEach(initTpl => {
+      if (!this.templates.some(t => t.type === initTpl.type)) {
+        this.templates.push({ ...initTpl });
+      }
+    });
     this.orgLinks = this.load(STORAGE_KEYS.ORG_LINKS, INITIAL_ORGANIZATION_LINKS);
     // Sanitize cached labels to clean app names
     const cleanBrandNames: Record<string, string> = {
@@ -519,6 +525,37 @@ class DataService {
 
   public getCustomerByCode(code: string): Customer | undefined {
     return this.customers.find(c => c.customerCode.trim().toUpperCase() === code.trim().toUpperCase());
+  }
+
+  public getCustomerByCodeOrPhone(identifier: string): Customer | undefined {
+    const trimmed = identifier.trim();
+    if (!trimmed) return undefined;
+
+    // 1. Direct match with customerCode (case-insensitive)
+    const byCode = this.customers.find(
+      c => c.customerCode.trim().toUpperCase() === trimmed.toUpperCase()
+    );
+    if (byCode) return byCode;
+
+    // 2. Normalize input phone for comparison (strip non-digits, unify 62 vs 0)
+    const normalize = (num: string): string => {
+      let digits = num.replace(/\D/g, '');
+      if (digits.startsWith('62')) {
+        digits = '0' + digits.slice(2);
+      }
+      return digits;
+    };
+
+    const inputPhoneClean = normalize(trimmed);
+    if (inputPhoneClean.length >= 8) {
+      const byPhone = this.customers.find(c => {
+        if (!c.phone) return false;
+        return normalize(c.phone) === inputPhoneClean;
+      });
+      if (byPhone) return byPhone;
+    }
+
+    return undefined;
   }
 
   public generateCustomerCode(rw: string): string {
@@ -1143,17 +1180,70 @@ class DataService {
     return [...this.templates];
   }
 
-  public saveMessageTemplate(tpl: MessageTemplate, actorUser: User) {
+  public saveMessageTemplate(tpl: MessageTemplate, actorUser?: User) {
     const idx = this.templates.findIndex(t => t.id === tpl.id);
     if (idx >= 0) {
       this.templates[idx] = { ...tpl, updatedAt: new Date().toISOString() };
-      this.logAudit(actorUser.id, actorUser.fullName, 'TEMPLATE_UPDATED', 'MESSAGE_TEMPLATE', tpl.id, null, tpl);
+      if (actorUser) {
+        this.logAudit(actorUser.id, actorUser.fullName, 'TEMPLATE_UPDATED', 'MESSAGE_TEMPLATE', tpl.id, null, tpl);
+      }
     } else {
       this.templates.push(tpl);
-      this.logAudit(actorUser.id, actorUser.fullName, 'TEMPLATE_CREATED', 'MESSAGE_TEMPLATE', tpl.id, null, tpl);
+      if (actorUser) {
+        this.logAudit(actorUser.id, actorUser.fullName, 'TEMPLATE_CREATED', 'MESSAGE_TEMPLATE', tpl.id, null, tpl);
+      }
     }
     this.save(STORAGE_KEYS.TEMPLATES, this.templates);
     return this.templates;
+  }
+
+  public resetMessageTemplate(templateId: string, actorUser?: User): MessageTemplate | undefined {
+    const defaultTpl = INITIAL_MESSAGE_TEMPLATES.find(t => t.id === templateId);
+    if (!defaultTpl) return undefined;
+    const restored: MessageTemplate = {
+      ...defaultTpl,
+      updatedAt: new Date().toISOString()
+    };
+    this.saveMessageTemplate(restored, actorUser);
+    return restored;
+  }
+
+  public prepareWhatsAppAccountConfirmation(params: {
+    customerName: string;
+    customerCode: string;
+    phone: string;
+    pin?: string;
+    categoryName?: string;
+    address?: string;
+  }): { messageText: string; waUrl: string } {
+    let template = this.templates.find(t => t.isActive && t.type === 'WHATSAPP_ACCOUNT_CONFIRMATION');
+    if (!template) {
+      template = INITIAL_MESSAGE_TEMPLATES.find(t => t.type === 'WHATSAPP_ACCOUNT_CONFIRMATION') || this.templates[0];
+    }
+
+    const websiteUrl = this.settings.website || 'https://bumdesgedangan.id';
+    const content = template?.content || '';
+
+    const text = content
+      .replace(/{nama}/g, params.customerName)
+      .replace(/{id_pelanggan}/g, params.customerCode)
+      .replace(/{no_hp}/g, params.phone)
+      .replace(/{pin_awal}/g, params.pin || '1234')
+      .replace(/{kategori}/g, params.categoryName || 'Rumah Tangga')
+      .replace(/{alamat}/g, params.address || '-')
+      .replace(/{nama_bumdes}/g, this.settings.bumdesName)
+      .replace(/{nomor_bumdes}/g, this.settings.phoneWhatsapp)
+      .replace(/{link_web}/g, websiteUrl);
+
+    let cleanPhone = params.phone.replace(/\D/g, '');
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = '62' + cleanPhone.substring(1);
+    } else if (!cleanPhone.startsWith('62')) {
+      cleanPhone = '62' + cleanPhone;
+    }
+
+    const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}` : '';
+    return { messageText: text, waUrl };
   }
 
   public prepareWhatsAppReminder(customerId: string) {
