@@ -104,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <div className="flex items-center gap-2.5">
                   <Radio className="w-4 h-4 shrink-0" />
-                  <span>Pengumuman Desa</span>
+                  <span>Pengumuman</span>
                 </div>
               </button>
 

@@ -11,6 +11,7 @@ import {
   Edit2, Trash2, Check, X, Database, RefreshCw
 } from 'lucide-react';
 import { saveSupabaseConfig, clearSupabaseConfig, getSupabaseConfig } from '../lib/supabase';
+import { SocialBrandIcon, getSocialBadgeStyle } from '../components/common/SocialBrandIcon';
 
 export const SettingsView: React.FC = () => {
   const { currentUser, role } = useAuth();
@@ -399,15 +400,22 @@ export const SettingsView: React.FC = () => {
           </div>
 
           <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
-            {orgLinks.map((l) => (
-              <div key={l.id} className="p-3.5 flex items-center justify-between text-xs hover:bg-slate-50">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">{l.label}</span>
-                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">{l.type}</span>
+            {orgLinks.map((l) => {
+              const badgeStyle = getSocialBadgeStyle(l.type);
+              return (
+                <div key={l.id} className="p-3.5 flex items-center justify-between text-xs hover:bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${badgeStyle.badgeBg}`}>
+                      <SocialBrandIcon type={l.type} className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900">{l.label}</span>
+                        <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">{l.type}</span>
+                      </div>
+                      <div className="text-slate-400 font-mono text-[11px] truncate max-w-md mt-0.5">{l.url}</div>
+                    </div>
                   </div>
-                  <div className="text-slate-400 font-mono text-[11px] truncate max-w-md mt-0.5">{l.url}</div>
-                </div>
 
                 <div className="flex items-center gap-2">
                   <button
@@ -430,7 +438,8 @@ export const SettingsView: React.FC = () => {
                   </button>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { dataService } from '../services/dataService';
+import { SocialBrandIcon, getSocialBadgeStyle } from '../components/common/SocialBrandIcon';
 import {
   Eye, EyeOff, MessageSquare, Globe, Camera, Share2,
   Video, Mail, MapPin, ArrowRight, ShieldCheck, Lock, UserCheck
@@ -57,18 +58,6 @@ export const LoginView: React.FC = () => {
     }
   };
 
-  const getSocialIcon = (type: string) => {
-    switch (type) {
-      case 'WHATSAPP': return <MessageSquare className="w-4 h-4" />;
-      case 'INSTAGRAM': return <Camera className="w-4 h-4" />;
-      case 'TIKTOK': return <Video className="w-4 h-4" />;
-      case 'FACEBOOK': return <Share2 className="w-4 h-4" />;
-      case 'WEBSITE': return <Globe className="w-4 h-4" />;
-      case 'EMAIL': return <Mail className="w-4 h-4" />;
-      case 'MAP': return <MapPin className="w-4 h-4" />;
-      default: return <Globe className="w-4 h-4" />;
-    }
-  };
 
   // Quick fill buttons for testing/demo
   const fillSampleCustomer = (code: string, pin: string) => {
@@ -352,19 +341,24 @@ export const LoginView: React.FC = () => {
                 Media Sosial & Informasi Resmi
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2">
-                {activeLinks.map((link) => (
-                  <a
-                    key={link.id}
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:border-brand-500 text-slate-600 hover:text-brand-700 rounded-lg text-[11px] font-medium transition shadow-xs"
-                    title={link.label}
-                  >
-                    {getSocialIcon(link.type)}
-                    <span className="truncate max-w-[120px]">{link.label}</span>
-                  </a>
-                ))}
+                {activeLinks.map((link) => {
+                  const style = getSocialBadgeStyle(link.type);
+                  return (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`flex items-center gap-2 px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] font-semibold text-slate-700 transition shadow-2xs hover:shadow-xs hover:-translate-y-0.5 ${style.hoverBorder}`}
+                      title={link.label}
+                    >
+                      <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${style.badgeBg}`}>
+                        <SocialBrandIcon type={link.type} className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="truncate max-w-[130px]">{link.label}</span>
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}

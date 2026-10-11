@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { dataService } from '../services/dataService';
 import { Bill, ServiceLocation, Payment, BankAccount, Receipt, Broadcast } from '../types';
 import { ReceiptModal } from '../components/common/ReceiptModal';
+import { SocialBrandIcon, getSocialBadgeStyle } from '../components/common/SocialBrandIcon';
 import {
   Home, Store, Building, AlertCircle, CheckCircle2, Clock,
   XCircle, Copy, Check, Upload, QrCode, CreditCard, Banknote,
@@ -246,7 +247,7 @@ export const CustomerDashboardView: React.FC<CustomerDashboardViewProps> = ({
 
               {/* Latest Broadcast Item Highlighted */}
               <div className="space-y-3">
-                {broadcasts.slice(0, 2).map((bc, idx) => (
+                {broadcasts.slice(0, 1).map((bc, idx) => (
                   <div
                     key={bc.id}
                     className={`rounded-2xl p-4 transition ${
@@ -690,7 +691,7 @@ export const CustomerDashboardView: React.FC<CustomerDashboardViewProps> = ({
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                 <Radio className="w-6 h-6 text-brand-600" />
-                <span>Pengumuman & Siaran Informasi Desa</span>
+                <span>Pengumuman</span>
               </h1>
               <p className="text-xs text-slate-500 mt-0.5">
                 Pemberitahuan resmi jadwal armada truk sampah dan pengumuman kebersihan dari BUMDes Makmur Gedangan.
@@ -857,20 +858,37 @@ export const CustomerDashboardView: React.FC<CustomerDashboardViewProps> = ({
           {/* Official Social Links */}
           {orgLinks.length > 0 && (
             <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-              <h2 className="font-extrabold text-sm text-slate-900 mb-3">Media Sosial & Informasi Resmi</h2>
-              <div className="flex flex-wrap gap-2.5">
-                {orgLinks.map(link => (
-                  <a
-                    key={link.id}
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3.5 py-2 bg-slate-50 hover:bg-brand-50 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-800 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer"
-                  >
-                    <span>{link.label}</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                  </a>
-                ))}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
+                <div>
+                  <h2 className="font-extrabold text-sm text-slate-900">Media Sosial & Informasi Resmi</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Kanal komunikasi, pengaduan, dan publikasi resmi BUMDes</p>
+                </div>
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 self-start sm:self-auto">
+                  {orgLinks.length} Kanal Aktif
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2.5 sm:gap-3">
+                {orgLinks.map(link => {
+                  const style = getSocialBadgeStyle(link.type);
+                  return (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`group inline-flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-50/70 hover:bg-white border border-slate-200/80 rounded-2xl shadow-2xs hover:shadow-md transition-all duration-200 text-slate-700 hover:-translate-y-0.5 cursor-pointer ${style.hoverBorder}`}
+                      title={link.label}
+                    >
+                      <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 shadow-2xs ${style.badgeBg}`}>
+                        <SocialBrandIcon type={link.type} className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-800 group-hover:text-slate-950 transition">
+                        {link.label}
+                      </span>
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition ml-0.5" />
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}
