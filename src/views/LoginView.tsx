@@ -84,7 +84,7 @@ export const LoginView: React.FC = () => {
               <img
                 src={settings.logoUrl}
                 alt="Logo RESIK"
-                className="h-28 sm:h-32 w-auto max-w-[280px] object-contain drop-shadow-md transition-transform hover:scale-[1.02]"
+                className="w-[250px] max-w-full h-auto max-h-[250px] object-contain drop-shadow-md transition-transform hover:scale-[1.02]"
                 onError={() => setLogoError(true)}
               />
             ) : (
