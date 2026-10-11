@@ -67,6 +67,80 @@ export const SettingsView: React.FC = () => {
     status: 'ACTIVE'
   });
 
+  // Category & Tariff modal state
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<{
+    id?: string;
+    name: string;
+    description: string;
+    amount: number;
+    effectiveFrom: string;
+    status: 'ACTIVE' | 'INACTIVE';
+  }>({
+    name: '',
+    description: '',
+    amount: 20000,
+    effectiveFrom: new Date().toISOString().split('T')[0],
+    status: 'ACTIVE'
+  });
+
+  const handleOpenAddCategory = () => {
+    setEditingCategory({
+      name: '',
+      description: '',
+      amount: 20000,
+      effectiveFrom: new Date().toISOString().split('T')[0],
+      status: 'ACTIVE'
+    });
+    setCategoryModalOpen(true);
+  };
+
+  const handleOpenEditCategory = (cat: Category) => {
+    const trf = tariffs.find(t => t.categoryId === cat.id);
+    setEditingCategory({
+      id: cat.id,
+      name: cat.name,
+      description: cat.description || '',
+      amount: trf ? trf.amount : 20000,
+      effectiveFrom: trf?.effectiveFrom || '2026-01-01',
+      status: cat.status
+    });
+    setCategoryModalOpen(true);
+  };
+
+  const handleSaveCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory.name.trim()) {
+      alert('Nama kategori wajib diisi.');
+      return;
+    }
+    if (editingCategory.amount < 0) {
+      alert('Nominal tarif tidak boleh bernilai negatif.');
+      return;
+    }
+
+    try {
+      dataService.saveCategoryWithTariff(editingCategory, currentUser);
+      setCategoryModalOpen(false);
+      setRefreshKey(prev => prev + 1);
+      alert('Kategori dan tarif pelanggan berhasil disimpan!');
+    } catch (err: any) {
+      alert(err.message || 'Gagal menyimpan kategori');
+    }
+  };
+
+  const handleDeleteCategory = (cat: Category) => {
+    if (!confirm(`Hapus kategori "${cat.name}"?`)) return;
+
+    const res = dataService.deleteCategory(cat.id, currentUser);
+    if (!res.success) {
+      alert(res.message || 'Kategori tidak dapat dihapus');
+      return;
+    }
+    setRefreshKey(prev => prev + 1);
+    alert(`Kategori "${cat.name}" berhasil dihapus.`);
+  };
+
   // Handle General Profile Settings
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -447,20 +521,92 @@ export const SettingsView: React.FC = () => {
       {/* ================= TAB 5: TARIF & KATEGORI ================= */}
       {activeTab === 'TARIF' && (
         <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <h2 className="font-bold text-sm text-slate-900">Tarif Iuran Berdasarkan Kategori (PRD Section 30)</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="font-bold text-sm text-slate-900">Tarif Iuran Berdasarkan Kategori (PRD Section 30)</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Kelola kategori pelanggan, tambahkan kategori baru (seperti Kategori Khusus), serta sesuaikan nominal tarif iuran per bulan.
+              </p>
+            </div>
+            {(role === 'SUPER_ADMIN' || role === 'ADMIN') && (
+              <button
+                onClick={handleOpenAddCategory}
+                className="px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm self-start sm:self-auto"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Tambah Kategori Baru</span>
+              </button>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {tariffs.map(t => (
-              <div key={t.id} className="p-4 border border-slate-200 rounded-2xl bg-slate-50 space-y-2">
-                <div className="font-bold text-slate-900 text-sm">{t.categoryName}</div>
-                <div className="text-2xl font-black text-brand-900">
-                  Rp {t.amount.toLocaleString('id-ID')}
-                  <span className="text-xs text-slate-400 font-normal"> / bln</span>
+            {categories.map(cat => {
+              const trf = tariffs.find(t => t.categoryId === cat.id);
+              const amount = trf ? trf.amount : 0;
+              const effectiveFrom = trf?.effectiveFrom || '2026-01-01';
+              const isDefaultCat = ['cat-1', 'cat-2', 'cat-3'].includes(cat.id);
+
+              return (
+                <div key={cat.id} className="p-4 border border-slate-200 rounded-2xl bg-slate-50 space-y-2 relative group hover:border-slate-300 transition">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm">{cat.name}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          cat.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {cat.status === 'ACTIVE' ? 'Aktif' : 'Nonaktif'}
+                        </span>
+                      </div>
+                      {cat.description && (
+                        <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{cat.description}</p>
+                      )}
+                    </div>
+
+                    {(role === 'SUPER_ADMIN' || role === 'ADMIN') && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleOpenEditCategory(cat)}
+                          className="p-1.5 text-slate-500 hover:text-brand-700 hover:bg-white rounded-lg transition"
+                          title="Edit Kategori & Tarif"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        {!isDefaultCat && (
+                          <button
+                            onClick={() => handleDeleteCategory(cat)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition"
+                            title="Hapus Kategori"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-2xl font-black text-brand-900">
+                    Rp {amount.toLocaleString('id-ID')}
+                    <span className="text-xs text-slate-400 font-normal"> / bln</span>
+                  </div>
+
+                  <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-200/60">
+                    <span>Mulai berlaku: {effectiveFrom}</span>
+                    {(role === 'SUPER_ADMIN' || role === 'ADMIN') && (
+                      <button
+                        onClick={() => {
+                          dataService.toggleCategoryStatus(cat.id, currentUser);
+                          setRefreshKey(prev => prev + 1);
+                        }}
+                        className="text-[10px] text-brand-700 hover:underline font-semibold"
+                      >
+                        {cat.status === 'ACTIVE' ? 'Nonaktifkan' : 'Aktifkan'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-400">
-                  Mulai berlaku: {t.effectiveFrom}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -821,6 +967,145 @@ export const SettingsView: React.FC = () => {
                   className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-sm"
                 >
                   Simpan Pengguna
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tambah / Edit Kategori & Tarif Pelanggan */}
+      {categoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-base text-slate-900">
+                  {editingCategory.id ? 'Edit Kategori & Tarif' : 'Tambah Kategori Pelanggan Baru'}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {editingCategory.id
+                    ? 'Ubah nominal harga iuran atau informasi kategori'
+                    : 'Daftarkan kategori khusus/baru untuk penagihan retribusi'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCategoryModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCategory} className="space-y-3.5 text-xs pt-4">
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Nama Kategori <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editingCategory.name}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                  placeholder="Contoh: Kategori Khusus, Sekolah, Instansi"
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-medium focus:ring-1 focus:ring-brand-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Nominal Tarif Iuran Bulanan (Rp) <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-xs">Rp</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={editingCategory.amount}
+                    onChange={(e) => setEditingCategory({ ...editingCategory, amount: Number(e.target.value) || 0 })}
+                    placeholder="20000"
+                    className="w-full pl-10 pr-3.5 py-2.5 border border-slate-300 rounded-xl font-bold text-slate-900 focus:ring-1 focus:ring-brand-500"
+                    required
+                  />
+                </div>
+                <div className="text-[11px] text-emerald-700 font-bold mt-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 flex items-center justify-between">
+                  <span>Pratinjau Tarif:</span>
+                  <span>Rp {Number(editingCategory.amount || 0).toLocaleString('id-ID')} / bulan</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Deskripsi Kategori (Opsional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={editingCategory.description}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, description: e.target.value })}
+                  placeholder="Contoh: Tempat ibadah, sekolah, atau fasilitas khusus bersubsidi"
+                  className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Tanggal Mulai Berlaku Tarif
+                </label>
+                <input
+                  type="date"
+                  value={editingCategory.effectiveFrom}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, effectiveFrom: e.target.value })}
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-mono text-xs"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Status Kategori
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingCategory({ ...editingCategory, status: 'ACTIVE' })}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      editingCategory.status === 'ACTIVE'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>● Aktif</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingCategory({ ...editingCategory, status: 'INACTIVE' })}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      editingCategory.status === 'INACTIVE'
+                        ? 'bg-rose-50 border-rose-300 text-rose-800'
+                        : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>○ Nonaktif</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setCategoryModalOpen(false)}
+                  className="px-4 py-2.5 border border-slate-300 hover:bg-slate-100 rounded-xl text-slate-700 font-semibold transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-sm transition flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Simpan Kategori & Tarif</span>
                 </button>
               </div>
             </form>

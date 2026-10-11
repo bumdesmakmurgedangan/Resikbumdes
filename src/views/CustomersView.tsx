@@ -24,6 +24,7 @@ export const CustomersView: React.FC = () => {
   // Search & Filter
   const [search, setSearch] = useState('');
   const [filterRW, setFilterRW] = useState('ALL');
+  const [filterCategory, setFilterCategory] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
 
   // Customer Detail Drawer / Modal
@@ -106,6 +107,11 @@ export const CustomersView: React.FC = () => {
       const custServices = allServices.filter(s => s.customerId === c.id);
       const matchRW = custServices.some(s => s.rw === filterRW);
       if (!matchRW) return false;
+    }
+    if (filterCategory !== 'ALL') {
+      const custServices = allServices.filter(s => s.customerId === c.id);
+      const matchCat = custServices.some(s => s.categoryId === filterCategory);
+      if (!matchCat) return false;
     }
     return true;
   });
@@ -259,6 +265,15 @@ export const CustomersView: React.FC = () => {
         >
           <option value="ALL">Semua RW</option>
           {uniqueRWs.map(rw => <option key={rw} value={rw}>{rw}</option>)}
+        </select>
+
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          className="px-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-700"
+        >
+          <option value="ALL">Semua Kategori</option>
+          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
 
         <select
@@ -469,7 +484,14 @@ export const CustomersView: React.FC = () => {
                       onChange={(e) => setNewCategoryId(e.target.value)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl"
                     >
-                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {categories.filter(c => c.status === 'ACTIVE' || c.id === newCategoryId).map(c => {
+                        const trf = tariffs.find(t => t.categoryId === c.id);
+                        return (
+                          <option key={c.id} value={c.id}>
+                            {c.name} {trf ? `(Rp ${trf.amount.toLocaleString('id-ID')}/bln)` : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 </div>
@@ -721,7 +743,14 @@ export const CustomersView: React.FC = () => {
                   onChange={(e) => setSrvCategoryId(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-xl"
                 >
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {categories.filter(c => c.status === 'ACTIVE' || c.id === srvCategoryId).map(c => {
+                    const trf = tariffs.find(t => t.categoryId === c.id);
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {c.name} {trf ? `(Rp ${trf.amount.toLocaleString('id-ID')}/bln)` : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

@@ -365,6 +365,125 @@ class DataService {
     return this.tariffs;
   }
 
+  public saveCategoryWithTariff(data: {
+    id?: string;
+    name: string;
+    description?: string;
+    amount: number;
+    effectiveFrom?: string;
+    status?: 'ACTIVE' | 'INACTIVE';
+  }, actorUser: User): { category: Category; tariff: Tariff } {
+    const now = new Date().toISOString();
+    let catId = data.id;
+    let savedCat: Category;
+    let savedTariff: Tariff;
+
+    if (catId && this.categories.some(c => c.id === catId)) {
+      const cIdx = this.categories.findIndex(c => c.id === catId);
+      const oldCat = { ...this.categories[cIdx] };
+      savedCat = {
+        ...this.categories[cIdx],
+        name: data.name.trim(),
+        description: data.description?.trim() || '',
+        status: data.status || 'ACTIVE'
+      };
+      this.categories[cIdx] = savedCat;
+
+      const tIdx = this.tariffs.findIndex(t => t.categoryId === catId);
+      if (tIdx >= 0) {
+        const oldTariff = { ...this.tariffs[tIdx] };
+        savedTariff = {
+          ...this.tariffs[tIdx],
+          amount: Number(data.amount) || 0,
+          effectiveFrom: data.effectiveFrom || this.tariffs[tIdx].effectiveFrom,
+          status: data.status || 'ACTIVE'
+        };
+        this.tariffs[tIdx] = savedTariff;
+        this.logAudit(actorUser.id, actorUser.fullName, 'TARIFF_UPDATED', 'TARIFF', savedTariff.id, oldTariff, savedTariff);
+      } else {
+        savedTariff = {
+          id: 'trf-' + Date.now(),
+          categoryId: catId,
+          amount: Number(data.amount) || 0,
+          effectiveFrom: data.effectiveFrom || '2026-01-01',
+          effectiveUntil: null,
+          status: data.status || 'ACTIVE',
+          createdAt: now
+        };
+        this.tariffs.push(savedTariff);
+        this.logAudit(actorUser.id, actorUser.fullName, 'TARIFF_CREATED', 'TARIFF', savedTariff.id, null, savedTariff);
+      }
+
+      this.logAudit(actorUser.id, actorUser.fullName, 'CATEGORY_UPDATED', 'CATEGORY', catId, oldCat, savedCat);
+    } else {
+      catId = 'cat-' + Date.now();
+      savedCat = {
+        id: catId,
+        name: data.name.trim(),
+        description: data.description?.trim() || '',
+        status: data.status || 'ACTIVE',
+        createdAt: now
+      };
+      this.categories.push(savedCat);
+
+      savedTariff = {
+        id: 'trf-' + Date.now(),
+        categoryId: catId,
+        amount: Number(data.amount) || 0,
+        effectiveFrom: data.effectiveFrom || new Date().toISOString().split('T')[0],
+        effectiveUntil: null,
+        status: data.status || 'ACTIVE',
+        createdAt: now
+      };
+      this.tariffs.push(savedTariff);
+
+      this.logAudit(actorUser.id, actorUser.fullName, 'CATEGORY_CREATED', 'CATEGORY', catId, null, savedCat);
+      this.logAudit(actorUser.id, actorUser.fullName, 'TARIFF_CREATED', 'TARIFF', savedTariff.id, null, savedTariff);
+    }
+
+    this.save(STORAGE_KEYS.CATEGORIES, this.categories);
+    this.save(STORAGE_KEYS.TARIFFS, this.tariffs);
+    return { category: savedCat, tariff: savedTariff };
+  }
+
+  public deleteCategory(categoryId: string, actorUser: User): { success: boolean; message?: string } {
+    const isUsed = this.services.some(s => s.categoryId === categoryId);
+    if (isUsed) {
+      const activeCount = this.services.filter(s => s.categoryId === categoryId).length;
+      return {
+        success: false,
+        message: `Kategori ini sedang digunakan oleh ${activeCount} lokasi layanan pelanggan. Silakan ubah status kategori menjadi NONAKTIF jika tidak ingin digunakan untuk pendaftaran baru.`
+      };
+    }
+
+    const catIdx = this.categories.findIndex(c => c.id === categoryId);
+    if (catIdx >= 0) {
+      const deleted = this.categories.splice(catIdx, 1)[0];
+      this.tariffs = this.tariffs.filter(t => t.categoryId !== categoryId);
+      this.save(STORAGE_KEYS.CATEGORIES, this.categories);
+      this.save(STORAGE_KEYS.TARIFFS, this.tariffs);
+      this.logAudit(actorUser.id, actorUser.fullName, 'CATEGORY_DELETED', 'CATEGORY', categoryId, deleted, null);
+      return { success: true };
+    }
+
+    return { success: false, message: 'Kategori tidak ditemukan' };
+  }
+
+  public toggleCategoryStatus(categoryId: string, actorUser: User) {
+    const cat = this.categories.find(c => c.id === categoryId);
+    if (cat) {
+      cat.status = cat.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      const trf = this.tariffs.find(t => t.categoryId === categoryId);
+      if (trf) {
+        trf.status = cat.status;
+      }
+      this.save(STORAGE_KEYS.CATEGORIES, this.categories);
+      this.save(STORAGE_KEYS.TARIFFS, this.tariffs);
+      this.logAudit(actorUser.id, actorUser.fullName, cat.status === 'ACTIVE' ? 'CATEGORY_ACTIVATED' : 'CATEGORY_DEACTIVATED', 'CATEGORY', categoryId);
+    }
+    return this.categories;
+  }
+
   // ----------------------------------------------------
   // CUSTOMERS & SERVICES (PRD Sections 25-35)
   // ----------------------------------------------------

@@ -40,6 +40,15 @@ const violetIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+const orangeIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 export const MapView: React.FC = () => {
   const allServices = dataService.getServiceLocations();
   const regions = dataService.getRegions();
@@ -67,9 +76,11 @@ export const MapView: React.FC = () => {
   const defaultCenter: [number, number] = [-7.3875, 112.7210];
 
   const getMarkerIcon = (categoryName?: string) => {
-    if (categoryName?.toLowerCase().includes('umkm')) return blueIcon;
-    if (categoryName?.toLowerCase().includes('perusahaan')) return violetIcon;
-    return greenIcon;
+    const lower = (categoryName || '').toLowerCase();
+    if (lower.includes('umkm')) return blueIcon;
+    if (lower.includes('perusahaan') || lower.includes('pt ') || lower.includes('cv ')) return violetIcon;
+    if (lower.includes('rumah tangga')) return greenIcon;
+    return orangeIcon;
   };
 
   return (
@@ -117,16 +128,20 @@ export const MapView: React.FC = () => {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-3 text-xs text-slate-600">
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Rumah Tangga
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> UMKM
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Perusahaan
-          </span>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+          {categories.map((c) => {
+            const lower = c.name.toLowerCase();
+            let dotColor = 'bg-amber-500';
+            if (lower.includes('rumah tangga')) dotColor = 'bg-emerald-500';
+            else if (lower.includes('umkm')) dotColor = 'bg-blue-500';
+            else if (lower.includes('perusahaan')) dotColor = 'bg-purple-500';
+
+            return (
+              <span key={c.id} className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full ${dotColor}`}></span> {c.name}
+              </span>
+            );
+          })}
         </div>
       </div>
 
