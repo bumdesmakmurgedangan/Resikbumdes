@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { dataService } from '../services/dataService';
 import { SocialBrandIcon, getSocialBadgeStyle } from '../components/common/SocialBrandIcon';
 import {
-  Eye, EyeOff, MessageSquare, Globe, Camera, Share2,
+  Eye, EyeOff, MessageSquare, Camera, Share2,
   Video, Mail, MapPin, ArrowRight, ShieldCheck, Lock, UserCheck
 } from 'lucide-react';
 
@@ -27,6 +27,7 @@ export const LoginView: React.FC = () => {
   // Status & error handling
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState(false);
 
   const handleCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,36 +79,28 @@ export const LoginView: React.FC = () => {
         {/* Main Card */}
         <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
           {/* Top Brand Banner */}
-          <div className="p-6 pb-5 text-center bg-gradient-to-b from-brand-50/60 to-white">
-            <img
-              src={settings.logoUrl}
-              alt="Logo RESIK"
-              className="h-20 w-auto mx-auto mb-3 object-contain drop-shadow"
-              onError={(e) => {
-                // If remote logo fails, show stylized text
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
+          <div className="p-6 pb-4 text-center bg-gradient-to-b from-brand-50/60 to-white flex flex-col items-center justify-center">
+            {!logoError ? (
+              <img
+                src={settings.logoUrl}
+                alt="Logo RESIK"
+                className="h-28 sm:h-32 w-auto max-w-[280px] object-contain drop-shadow-md transition-transform hover:scale-[1.02]"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <div className="py-2">
+                <h1 className="text-2xl font-black text-brand-900 tracking-tight">RESIK</h1>
+                <p className="text-xs text-brand-700 font-medium mt-1">
+                  {settings.bumdesName}
+                </p>
+              </div>
+            )}
 
-            <h1 className="text-2xl font-black text-brand-900 tracking-tight">RESIK</h1>
-            <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider mt-0.5">
-              Retribusi Elektronik & Sistem Informasi Kebersihan
-            </p>
-            <p className="text-xs text-brand-700 font-medium mt-1">
-              {settings.bumdesName}
-            </p>
-
-            {/* Optional Website Link (PRD Section 21) */}
+            {/* URL Website BUMDes Text Only */}
             {settings.website && settings.website.trim().length > 0 && (
-              <a
-                href={settings.website}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-800 font-medium mt-2.5 py-1 px-3 bg-brand-50 hover:bg-brand-100 rounded-full transition"
-              >
-                <Globe className="w-3.5 h-3.5" />
-                <span>🌐 Kunjungi Website {settings.bumdesName}</span>
-              </a>
+              <p className="text-xs text-slate-500 font-medium mt-2.5 tracking-wide select-all">
+                {settings.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+              </p>
             )}
           </div>
 
