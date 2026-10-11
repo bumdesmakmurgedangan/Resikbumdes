@@ -52,15 +52,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ receipt, onClose, tr
           <div className="text-center border-b pb-4 border-dashed border-slate-300">
             <img
               src={settings.logoUrl}
-              alt="Logo RESIK"
+              alt="Logo BUMDes"
               className="h-14 mx-auto mb-2 object-contain"
               onError={(e) => {
                 // Fallback text if image fails to load
                 (e.target as HTMLElement).style.display = 'none';
               }}
             />
-            <h2 className="text-xl font-bold tracking-tight text-brand-900">RESIK</h2>
-            <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">
+            <p className="text-xs text-slate-600 font-medium tracking-wide uppercase">
               Retribusi Elektronik & Sistem Informasi Kebersihan
             </p>
             <p className="text-xs font-semibold text-slate-700 mt-0.5">{settings.bumdesName}</p>

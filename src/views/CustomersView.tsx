@@ -120,6 +120,27 @@ export const CustomersView: React.FC = () => {
   // Reset PIN notification modal
   const [resetPinResult, setResetPinResult] = useState<{ code: string; tempPin: string } | null>(null);
 
+  // Edit Customer Modal State
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editStatus, setEditStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
+  const [syncServiceAddress, setSyncServiceAddress] = useState(true);
+
+  // Edit Service Location Modal State
+  const [editingService, setEditingService] = useState<ServiceLocation | null>(null);
+  const [editSrvName, setEditSrvName] = useState('');
+  const [editSrvAddress, setEditSrvAddress] = useState('');
+  const [editSrvRW, setEditSrvRW] = useState('RW 01');
+  const [editSrvRT, setEditSrvRT] = useState('RT 01');
+  const [editSrvCategoryId, setEditSrvCategoryId] = useState('');
+  const [editSrvTariffId, setEditSrvTariffId] = useState('');
+  const [editSrvLat, setEditSrvLat] = useState('');
+  const [editSrvLng, setEditSrvLng] = useState('');
+  const [editSrvGmapsInput, setEditSrvGmapsInput] = useState('');
+  const [editSrvDetectedCoord, setEditSrvDetectedCoord] = useState<{ latitude: number; longitude: number } | null>(null);
+
   const filteredCustomers = customers.filter(c => {
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -243,6 +264,126 @@ export const CustomersView: React.FC = () => {
     if (!window.confirm(`Yakin ingin me-${action} akun pelanggan ${customer.name}?`)) return;
     dataService.toggleCustomerStatus(customer.id, currentUser);
     setRefreshKey(prev => prev + 1);
+  };
+
+  // Open Edit Customer Modal
+  const handleOpenEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setEditName(customer.name);
+    setEditPhone(customer.phone || '');
+    setEditAddress(customer.address);
+    setEditStatus(customer.status);
+    setSyncServiceAddress(true);
+  };
+
+  // Save Edit Customer Changes
+  const handleSaveEditCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCustomer) return;
+    if (!editName.trim() || !editAddress.trim()) {
+      alert('Nama dan alamat domisili pelanggan wajib diisi.');
+      return;
+    }
+
+    try {
+      const updated = dataService.saveCustomer({
+        id: editingCustomer.id,
+        name: editName.trim(),
+        phone: editPhone.trim(),
+        address: editAddress.trim(),
+        status: editStatus
+      }, currentUser);
+
+      // Sinkronkan alamat ke lokasi layanan jika dicentang
+      if (syncServiceAddress) {
+        const custServices = allServices.filter(s => s.customerId === editingCustomer.id);
+        if (custServices.length > 0) {
+          custServices.forEach((s, idx) => {
+            if (idx === 0 || custServices.length === 1) {
+              dataService.saveServiceLocation({
+                id: s.id,
+                address: editAddress.trim()
+              }, currentUser);
+            }
+          });
+        }
+      }
+
+      // Perbarui selectedCustomer jika sedang terbuka di drawer
+      if (selectedCustomer && selectedCustomer.id === editingCustomer.id) {
+        setSelectedCustomer(updated);
+      }
+
+      setEditingCustomer(null);
+      setRefreshKey(prev => prev + 1);
+      alert(`Data pelanggan ${updated.name} (${updated.customerCode}) berhasil diperbarui!`);
+    } catch (err: any) {
+      alert(err.message || 'Gagal memperbarui data pelanggan');
+    }
+  };
+
+  // Open Edit Service Location Modal
+  const handleOpenEditService = (srv: ServiceLocation) => {
+    setEditingService(srv);
+    setEditSrvName(srv.name);
+    setEditSrvAddress(srv.address);
+    setEditSrvRW(srv.rw);
+    setEditSrvRT(srv.rt);
+    setEditSrvCategoryId(srv.categoryId);
+    setEditSrvTariffId(srv.tariffId);
+    setEditSrvLat(srv.latitude ? srv.latitude.toString() : '');
+    setEditSrvLng(srv.longitude ? srv.longitude.toString() : '');
+    setEditSrvGmapsInput(srv.latitude && srv.longitude ? `${srv.latitude}, ${srv.longitude}` : '');
+    if (srv.latitude && srv.longitude) {
+      setEditSrvDetectedCoord({ latitude: srv.latitude, longitude: srv.longitude });
+    } else {
+      setEditSrvDetectedCoord(null);
+    }
+  };
+
+  const handleEditSrvGmapsPaste = (val: string) => {
+    setEditSrvGmapsInput(val);
+    const parsed = parseGoogleMapsLocation(val);
+    if (parsed) {
+      setEditSrvLat(parsed.latitude.toString());
+      setEditSrvLng(parsed.longitude.toString());
+      setEditSrvDetectedCoord(parsed);
+    } else {
+      setEditSrvDetectedCoord(null);
+    }
+  };
+
+  // Save Edit Service Changes
+  const handleSaveEditService = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingService) return;
+    if (!editSrvName.trim() || !editSrvAddress.trim()) {
+      alert('Nama objek dan alamat lokasi layanan wajib diisi.');
+      return;
+    }
+
+    try {
+      const selectedCat = categories.find(c => c.id === editSrvCategoryId) || categories[0];
+      const selectedTrf = tariffs.find(t => t.id === editSrvTariffId) || tariffs.find(t => t.categoryId === selectedCat?.id) || tariffs[0];
+
+      dataService.saveServiceLocation({
+        id: editingService.id,
+        name: editSrvName.trim(),
+        address: editSrvAddress.trim(),
+        rt: editSrvRT,
+        rw: editSrvRW,
+        categoryId: selectedCat?.id,
+        tariffId: selectedTrf?.id,
+        latitude: editSrvLat ? parseFloat(editSrvLat) : null,
+        longitude: editSrvLng ? parseFloat(editSrvLng) : null
+      }, currentUser);
+
+      setEditingService(null);
+      setRefreshKey(prev => prev + 1);
+      alert(`Lokasi layanan ${editSrvName} berhasil diperbarui!`);
+    } catch (err: any) {
+      alert(err.message || 'Gagal memperbarui lokasi layanan');
+    }
   };
 
   const handleApproveRegistration = (e: React.FormEvent) => {
@@ -471,7 +612,7 @@ export const CustomersView: React.FC = () => {
                       )}
                     </td>
 
-                    <td className="py-3 px-3 text-right space-x-1.5">
+                    <td className="py-3 px-3 text-right space-x-1.5 whitespace-nowrap">
                       <button
                         onClick={() => setSelectedCustomer(cust)}
                         className="px-2.5 py-1.5 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg text-slate-700 font-semibold transition"
@@ -481,8 +622,16 @@ export const CustomersView: React.FC = () => {
                       </button>
 
                       <button
+                        onClick={() => handleOpenEditCustomer(cust)}
+                        className="px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs transition inline-flex items-center"
+                        title="Edit Data Pelanggan (Nama, No WA, Alamat, Status)"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
                         onClick={() => handleResetPin(cust)}
-                        className="px-2 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs transition"
+                        className="px-2 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs transition inline-flex items-center"
                         title="Reset PIN Pelanggan"
                       >
                         <Key className="w-3.5 h-3.5" />
@@ -490,7 +639,7 @@ export const CustomersView: React.FC = () => {
 
                       <button
                         onClick={() => handleToggleStatus(cust)}
-                        className={`px-2 py-1.5 rounded-lg text-xs transition ${
+                        className={`px-2 py-1.5 rounded-lg text-xs transition inline-flex items-center ${
                           cust.status === 'ACTIVE'
                             ? 'bg-rose-50 text-rose-700 hover:bg-rose-100'
                             : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
@@ -1012,19 +1161,30 @@ export const CustomersView: React.FC = () => {
                         Tarif: Rp {srv.tariffAmount?.toLocaleString('id-ID')}/bln
                       </div>
                     </div>
-                    {srv.latitude && srv.longitude && (
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${srv.latitude},${srv.longitude}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-bold border border-emerald-200 transition shadow-2xs cursor-pointer"
-                        title="Buka rute Google Maps ke rumah pelanggan"
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditService(srv)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg text-[11px] font-bold border border-slate-200 hover:border-blue-300 transition shadow-2xs cursor-pointer"
+                        title="Edit Data Lokasi Layanan Ini"
                       >
-                        <Navigation className="w-3 h-3 text-emerald-600" />
-                        <span>Google Maps</span>
-                        <ExternalLink className="w-2.5 h-2.5 text-emerald-500" />
-                      </a>
-                    )}
+                        <Edit3 className="w-3 h-3 text-blue-600" />
+                        <span>Edit</span>
+                      </button>
+                      {srv.latitude && srv.longitude && (
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${srv.latitude},${srv.longitude}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-bold border border-emerald-200 transition shadow-2xs cursor-pointer"
+                          title="Buka rute Google Maps ke rumah pelanggan"
+                        >
+                          <Navigation className="w-3 h-3 text-emerald-600" />
+                          <span>Google Maps</span>
+                          <ExternalLink className="w-2.5 h-2.5 text-emerald-500" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1032,15 +1192,25 @@ export const CustomersView: React.FC = () => {
 
             <div className="mt-6 pt-4 border-t border-slate-200 flex justify-end gap-2">
               <button
-                onClick={() => handleResetPin(selectedCustomer)}
-                className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                type="button"
+                onClick={() => handleOpenEditCustomer(selectedCustomer)}
+                className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
-                <Key className="w-3.5 h-3.5" />
-                <span>Reset PIN Pelanggan</span>
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Edit Data Pelanggan</span>
               </button>
               <button
+                type="button"
+                onClick={() => handleResetPin(selectedCustomer)}
+                className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Key className="w-3.5 h-3.5" />
+                <span>Reset PIN</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setSelectedCustomer(null)}
-                className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700"
+                className="px-4 py-2 border border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-700 transition cursor-pointer"
               >
                 Tutup
               </button>
@@ -1473,6 +1643,319 @@ export const CustomersView: React.FC = () => {
                   className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer"
                 >
                   Konfirmasi Tolak
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= EDIT CUSTOMER MODAL ================= */}
+      {editingCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 overflow-hidden">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                  Edit Data Pelanggan
+                </span>
+                <h3 className="font-extrabold text-base text-slate-900 mt-1">
+                  Perbarui Informasi Pelanggan
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Revisi nama warga, nomor WhatsApp/HP, domisili/lokasi, atau status akun.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingCustomer(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditCustomer} className="space-y-3.5 mt-4 text-xs">
+              <div>
+                <label className="block font-bold uppercase text-slate-500 mb-1">
+                  ID Pelanggan (Permanen)
+                </label>
+                <input
+                  type="text"
+                  value={editingCustomer.customerCode}
+                  disabled
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-600 font-bold select-all cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Nama Pelanggan <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Contoh: Budi Santoso"
+                  className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl font-medium"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  No. WhatsApp / Telepon
+                </label>
+                <input
+                  type="text"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="Contoh: 081234567890"
+                  className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl font-mono"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Digunakan untuk masuk (login warga), konfirmasi penerbitan akun, dan reminder tagihan via WhatsApp.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Alamat Domisili / Rumah <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  placeholder="Contoh: Jl. Merpati No. 14, RT 01 / RW 03"
+                  className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl font-medium"
+                  required
+                />
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={syncServiceAddress}
+                    onChange={(e) => setSyncServiceAddress(e.target.checked)}
+                    className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer"
+                  />
+                  <span className="font-semibold text-slate-700 text-xs">
+                    Perbarui juga alamat lokasi layanan utama jika warga pindah lokasi
+                  </span>
+                </label>
+                <p className="text-[10px] text-slate-400 ml-6">
+                  Jika dicentang, alamat pada objek layanan kebersihan pelanggan ini otomatis diselaraskan dengan alamat baru di atas.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Status Akun Pelanggan
+                </label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                >
+                  <option value="ACTIVE">Aktif (Dapat mengakses layanan & menerima tagihan)</option>
+                  <option value="INACTIVE">Nonaktif (Layanan dihentikan sementara)</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setEditingCustomer(null)}
+                  className="px-4 py-2 border border-slate-300 hover:bg-slate-50 rounded-xl text-slate-700 font-semibold transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer"
+                >
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= EDIT SERVICE LOCATION MODAL ================= */}
+      {editingService && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                  Edit Lokasi Layanan
+                </span>
+                <h3 className="font-extrabold text-base text-slate-900 mt-1">
+                  Revisi Objek / Lokasi Layanan
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Kode Layanan: <strong className="font-mono text-brand-700">{editingService.serviceCode}</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingService(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditService} className="space-y-3.5 mt-4 text-xs">
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Nama Objek Layanan <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editSrvName}
+                  onChange={(e) => setEditSrvName(e.target.value)}
+                  placeholder="Contoh: Rumah Tinggal / Toko Berkah"
+                  className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 rounded-xl font-medium"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Alamat Objek Layanan <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={editSrvAddress}
+                  onChange={(e) => setEditSrvAddress(e.target.value)}
+                  placeholder="Contoh: Jl. Merpati No. 14"
+                  className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 rounded-xl font-medium"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">Wilayah RW</label>
+                  <select
+                    value={editSrvRW}
+                    onChange={(e) => setEditSrvRW(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                  >
+                    {uniqueRWs.map(rw => <option key={rw} value={rw}>{rw}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">Wilayah RT</label>
+                  <input
+                    type="text"
+                    value={editSrvRT}
+                    onChange={(e) => setEditSrvRT(e.target.value)}
+                    placeholder="Contoh: RT 01"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">Kategori</label>
+                  <select
+                    value={editSrvCategoryId}
+                    onChange={(e) => {
+                      setEditSrvCategoryId(e.target.value);
+                      const matchingTrf = tariffs.find(t => t.categoryId === e.target.value);
+                      if (matchingTrf) setEditSrvTariffId(matchingTrf.id);
+                    }}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                  >
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">Tarif Retribusi</label>
+                  <select
+                    value={editSrvTariffId}
+                    onChange={(e) => setEditSrvTariffId(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold text-brand-800"
+                  >
+                    {tariffs.filter(t => t.categoryId === editSrvCategoryId || t.id === editSrvTariffId).map(t => (
+                      <option key={t.id} value={t.id}>
+                        Rp {t.amount.toLocaleString('id-ID')}/bln
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Tempel / Deteksi Titik Google Maps */}
+              <div className="bg-emerald-50/70 border border-emerald-200/90 rounded-2xl p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold uppercase text-[10px] text-emerald-900 tracking-wider flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Titik / Link Google Maps (Auto Deteksi GPS)</span>
+                  </label>
+                  {editSrvDetectedCoord && (
+                    <span className="text-[10px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Terdeteksi!
+                    </span>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={editSrvGmapsInput}
+                    onChange={(e) => handleEditSrvGmapsPaste(e.target.value)}
+                    placeholder="Paste link Google Maps atau koordinat (-7.3885, 112.7214)..."
+                    className="w-full pl-3 pr-8 py-2 bg-white border border-emerald-300 focus:border-emerald-500 rounded-xl text-xs placeholder:text-slate-400"
+                  />
+                  {editSrvDetectedCoord && (
+                    <Check className="w-3.5 h-3.5 text-emerald-600 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-600">Latitude</label>
+                    <input
+                      type="text"
+                      value={editSrvLat}
+                      onChange={(e) => setEditSrvLat(e.target.value)}
+                      placeholder="-7.3885"
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-mono text-[11px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-600">Longitude</label>
+                    <input
+                      type="text"
+                      value={editSrvLng}
+                      onChange={(e) => setEditSrvLng(e.target.value)}
+                      placeholder="112.7214"
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-mono text-[11px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setEditingService(null)}
+                  className="px-4 py-2 border border-slate-300 hover:bg-slate-50 rounded-xl text-slate-700 font-semibold transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer"
+                >
+                  Simpan Lokasi Layanan
                 </button>
               </div>
             </form>
