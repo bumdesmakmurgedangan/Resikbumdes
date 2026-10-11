@@ -591,15 +591,18 @@ export const SettingsView: React.FC = () => {
 
                 <div>
                   <label className="block font-bold uppercase text-slate-700 mb-1">
-                    Alamat Sekretariat &amp; Kontak pada Kop
+                    Alamat &amp; Kontak pada Kop Surat
                   </label>
                   <textarea
                     rows={2}
                     value={settings.address}
                     onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-                    placeholder="Alamat kantor, kontak telepon, atau email BUMDes"
+                    placeholder="Alamat kantor, jalan, desa, kecamatan, kode pos, dll."
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl"
                   />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Alamat dicetak langsung di baris kontak kop surat tanpa kata otomatis &quot;Sekretariat:&quot;.
+                  </p>
                 </div>
               </div>
 
@@ -701,19 +704,51 @@ export const SettingsView: React.FC = () => {
 
               <div className="p-6 bg-white border-2 border-dashed border-slate-300 rounded-3xl space-y-6 shadow-sm">
                 {/* Kop Preview */}
-                <div className="text-center space-y-1 pb-3 border-b-2 border-slate-800">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
-                    {settings.kopParentInstitution || 'PEMERINTAH KABUPATEN SIDOARJO • KECAMATAN GEDANGAN'}
+                <div className="pb-3 border-b-2 border-slate-900">
+                  <div className="flex items-center justify-between gap-3">
+                    {/* Logo BUMDes on Left */}
+                    <div className="w-16 sm:w-20 flex-shrink-0 flex items-center justify-center">
+                      {settings.logoUrl ? (
+                        <img
+                          src={settings.logoUrl}
+                          alt="Logo BUMDes"
+                          className="w-14 h-14 sm:w-16 sm:h-16 max-h-20 object-contain drop-shadow-xs"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-300 flex items-center justify-center font-bold text-[10px] text-emerald-700">
+                          LOGO
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Kop Text Centered */}
+                    <div className="flex-1 text-center space-y-0.5">
+                      {settings.kopParentInstitution && (
+                        <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                          {settings.kopParentInstitution}
+                        </div>
+                      )}
+                      <div className="text-sm sm:text-base font-black uppercase tracking-wide text-slate-900 leading-tight">
+                        {settings.bumdesName || 'BADAN USAHA MILIK DESA (BUMDES) MAKMUR GEDANGAN'}
+                      </div>
+                      {settings.kopUnitName && (
+                        <div className="text-[10px] sm:text-[11px] font-semibold text-slate-700">
+                          {settings.kopUnitName}
+                        </div>
+                      )}
+                      <div className="text-[10px] text-slate-600 leading-normal pt-0.5">
+                        {settings.address}
+                        {settings.email ? ` • Email: ${settings.email}` : ''}
+                      </div>
+                    </div>
+
+                    {/* Spacer right for symmetric optical balance */}
+                    <div className="w-16 sm:w-20 flex-shrink-0 hidden sm:block"></div>
                   </div>
-                  <div className="text-sm font-black uppercase tracking-wide text-slate-900">
-                    {settings.bumdesName || 'BADAN USAHA MILIK DESA (BUMDES) MAKMUR GEDANGAN'}
-                  </div>
-                  <div className="text-[11px] text-slate-600">
-                    {settings.kopUnitName || 'UNIT USAHA PENGELOLAAN KEBERSIHAN & PERSAMPAHAN (RESIK)'}
-                  </div>
-                  <div className="text-[10px] text-slate-500">
-                    Sekretariat: {settings.address} • Email: {settings.email}
-                  </div>
+
+                  {/* Garis Ganda Kop Surat Resmi */}
+                  <div className="border-b-2 border-slate-900 mt-2.5"></div>
+                  <div className="border-b border-slate-900 mt-[2px]"></div>
                 </div>
 
                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center text-xs text-slate-500 italic">

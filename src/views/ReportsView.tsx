@@ -316,22 +316,47 @@ export const ReportsView: React.FC = () => {
       <div id="printable-report" className="space-y-6 bg-white print:bg-white rounded-3xl p-0 print:p-0">
         
         {/* KOP SURAT RESMI BUMDES (Hanya tampil saat Cetak / Save as PDF) */}
-        <div className="hidden print:block pb-4 mb-4 border-b-2 border-black">
-          <div className="text-center space-y-1">
-            <h1 className="text-sm font-bold uppercase tracking-wider text-black">
-              {settings.kopParentInstitution || 'PEMERINTAH KABUPATEN SIDOARJO • KECAMATAN GEDANGAN'}
-            </h1>
-            <h2 className="text-lg font-black uppercase text-black tracking-wide">
-              {settings.bumdesName || 'BADAN USAHA MILIK DESA (BUMDES) MAKMUR GEDANGAN'}
-            </h2>
-            <p className="text-xs text-slate-700">
-              {settings.kopUnitName || 'UNIT USAHA PENGELOLAAN KEBERSIHAN & PERSAMPAHAN "RESIK"'}
-            </p>
-            <p className="text-[10px] text-slate-600">
-              Sekretariat: {settings.address} • Email: {settings.email}
-            </p>
-            <div className="border-b border-black mt-2 pt-1"></div>
+        <div className="hidden print:block pb-2 mb-4">
+          <div className="flex items-center justify-between gap-4">
+            {/* Logo BUMDes di Kiri Kop Surat */}
+            <div className="w-20 flex-shrink-0 flex items-center justify-center">
+              {settings.logoUrl && (
+                <img
+                  src={settings.logoUrl}
+                  alt="Logo BUMDes"
+                  className="w-18 h-18 max-h-20 object-contain"
+                />
+              )}
+            </div>
+
+            {/* Teks Kop Surat di Tengah */}
+            <div className="flex-1 text-center space-y-0.5">
+              {settings.kopParentInstitution && (
+                <h1 className="text-xs font-bold uppercase tracking-wider text-black">
+                  {settings.kopParentInstitution}
+                </h1>
+              )}
+              <h2 className="text-base font-black uppercase text-black tracking-wide leading-tight">
+                {settings.bumdesName || 'BADAN USAHA MILIK DESA (BUMDES) MAKMUR GEDANGAN'}
+              </h2>
+              {settings.kopUnitName && (
+                <p className="text-xs font-bold text-black">
+                  {settings.kopUnitName}
+                </p>
+              )}
+              <p className="text-[10px] text-black leading-normal pt-0.5">
+                {settings.address}
+                {settings.email ? ` • Email: ${settings.email}` : ''}
+              </p>
+            </div>
+
+            {/* Spacer Kanan untuk Keseimbangan Simetris */}
+            <div className="w-20 flex-shrink-0"></div>
           </div>
+
+          {/* Garis Ganda Kop Surat Resmi */}
+          <div className="border-b-2 border-black mt-2.5"></div>
+          <div className="border-b border-black mt-[2px]"></div>
 
           <div className="mt-4 flex items-center justify-between text-xs">
             <div>
