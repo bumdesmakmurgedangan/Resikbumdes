@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/common/Navbar';
 import { Sidebar } from './components/common/Sidebar';
@@ -15,12 +15,20 @@ import { ReportsView } from './views/ReportsView';
 import { BroadcastView } from './views/BroadcastView';
 import { SettingsView } from './views/SettingsView';
 import { AuditLogsView } from './views/AuditLogsView';
-import { dataService } from './services/dataService';
 
 const MainLayout: React.FC = () => {
-  const { isAuthenticated, isCustomer, isStaff, role } = useAuth();
+  const { isAuthenticated, isCustomer, isStaff } = useAuth();
   const [activeTab, setActiveTab] = useState<string>(isCustomer ? 'customer-dashboard' : 'dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Sync active tab when user switches role
+  useEffect(() => {
+    if (isCustomer && !activeTab.startsWith('customer-')) {
+      setActiveTab('customer-dashboard');
+    } else if (isStaff && activeTab.startsWith('customer-')) {
+      setActiveTab('dashboard');
+    }
+  }, [isCustomer, isStaff]);
 
   // If not logged in, render the login page
   if (!isAuthenticated) {
@@ -29,14 +37,12 @@ const MainLayout: React.FC = () => {
 
   const renderActiveView = () => {
     if (isCustomer) {
-      switch (activeTab) {
-        case 'customer-dashboard':
-        case 'customer-history':
-        case 'customer-broadcast':
-        case 'customer-help':
-        default:
-          return <CustomerDashboardView />;
-      }
+      return (
+        <CustomerDashboardView
+          activeTab={activeTab}
+          onNavigateTab={setActiveTab}
+        />
+      );
     }
 
     // Staff Views
