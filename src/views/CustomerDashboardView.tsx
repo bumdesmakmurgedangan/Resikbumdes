@@ -28,7 +28,24 @@ export const CustomerDashboardView: React.FC<CustomerDashboardViewProps> = ({
   const services = dataService.getServiceLocations(currentCustomer.id);
   const bills = dataService.getBills({ customerId: currentCustomer.id });
   const payments = dataService.getPayments({ customerId: currentCustomer.id });
-  const broadcasts = dataService.getBroadcasts().filter(b => b.status === 'PUBLISHED');
+  const customerRWs = services.map(s => s.rw);
+  const customerCategoryIds = services.map(s => s.categoryId);
+  const customerCategoryNames = services.map(s => (s.categoryName || '').toLowerCase());
+
+  const broadcasts = dataService.getBroadcasts().filter(b => {
+    if (b.status !== 'PUBLISHED') return false;
+    if (!b.targetType || b.targetType === 'ALL') return true;
+    if (b.targetType === 'RW') {
+      const rw = b.targetFilter?.rw;
+      return !rw || customerRWs.includes(rw) || currentCustomer.address.includes(rw) || currentCustomer.customerCode.includes(rw);
+    }
+    if (b.targetType === 'CATEGORY') {
+      const catId = b.targetFilter?.categoryId;
+      const catName = (b.targetFilter?.categoryName || '').toLowerCase();
+      return (catId && customerCategoryIds.includes(catId)) || (catName && customerCategoryNames.includes(catName));
+    }
+    return true;
+  });
   const orgLinks = dataService.getActiveOrganizationLinks();
 
   // Payment Modal States
@@ -257,8 +274,18 @@ export const CustomerDashboardView: React.FC<CustomerDashboardViewProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between text-xs mb-1.5">
-                      <h3 className="font-extrabold text-sm text-white tracking-tight flex items-center gap-2">
+                      <h3 className="font-extrabold text-sm text-white tracking-tight flex flex-wrap items-center gap-2">
                         <span>{bc.title}</span>
+                        {bc.targetType === 'CATEGORY' && bc.targetFilter?.categoryName && (
+                          <span className="text-[10px] bg-white/20 text-white font-medium px-2 py-0.5 rounded-full border border-white/20 backdrop-blur-sm">
+                            Kategori: {bc.targetFilter.categoryName}
+                          </span>
+                        )}
+                        {bc.targetType === 'RW' && bc.targetFilter?.rw && (
+                          <span className="text-[10px] bg-white/20 text-white font-medium px-2 py-0.5 rounded-full border border-white/20 backdrop-blur-sm">
+                            {bc.targetFilter.rw}
+                          </span>
+                        )}
                       </h3>
                       <span className="text-[11px] text-emerald-200 font-medium">
                         {new Date(bc.createdAt).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
@@ -715,9 +742,19 @@ export const CustomerDashboardView: React.FC<CustomerDashboardViewProps> = ({
               broadcasts.map(bc => (
                 <div key={bc.id} className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                       <h2 className="font-extrabold text-base text-slate-900">{bc.title}</h2>
+                      {bc.targetType === 'CATEGORY' && bc.targetFilter?.categoryName && (
+                        <span className="text-[10px] bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded-full border border-purple-100">
+                          Kategori: {bc.targetFilter.categoryName}
+                        </span>
+                      )}
+                      {bc.targetType === 'RW' && bc.targetFilter?.rw && (
+                        <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full border border-blue-100">
+                          Wilayah: {bc.targetFilter.rw}
+                        </span>
+                      )}
                     </div>
                     <span className="text-xs text-slate-400">
                       {new Date(bc.createdAt).toLocaleDateString('id-ID', { dateStyle: 'full' })}

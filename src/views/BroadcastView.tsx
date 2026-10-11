@@ -19,6 +19,7 @@ export const BroadcastView: React.FC = () => {
   const [message, setMessage] = useState('');
   const [targetType, setTargetType] = useState<TargetType>('ALL');
   const [targetRW, setTargetRW] = useState('RW 01');
+  const [targetCategory, setTargetCategory] = useState(categories[0]?.id || 'cat-1');
 
   const handleCreateBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,11 +29,22 @@ export const BroadcastView: React.FC = () => {
     }
 
     try {
-      const bc = dataService.sendBroadcast(
+      let targetFilter: Record<string, any> = {};
+      if (targetType === 'RW') {
+        targetFilter = { rw: targetRW };
+      } else if (targetType === 'CATEGORY') {
+        const cat = categories.find(c => c.id === targetCategory);
+        targetFilter = {
+          categoryId: targetCategory,
+          categoryName: cat ? cat.name : 'Rumah Tangga'
+        };
+      }
+
+      dataService.sendBroadcast(
         title.trim(),
         message.trim(),
         targetType,
-        targetType === 'RW' ? { rw: targetRW } : {},
+        targetFilter,
         currentUser
       );
       setBroadcasts(dataService.getBroadcasts());
@@ -43,6 +55,38 @@ export const BroadcastView: React.FC = () => {
     } catch (err: any) {
       alert(err.message || 'Gagal mengirim broadcast');
     }
+  };
+
+  const renderTargetBadge = (bc: Broadcast) => {
+    if (bc.targetType === 'ALL' || !bc.targetType) {
+      return (
+        <span className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-100">
+          Target: Semua Warga
+        </span>
+      );
+    }
+    if (bc.targetType === 'RW') {
+      return (
+        <span className="bg-blue-50 text-blue-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-blue-100">
+          Target: {bc.targetFilter?.rw || 'Wilayah RW'}
+        </span>
+      );
+    }
+    if (bc.targetType === 'CATEGORY') {
+      const catName = bc.targetFilter?.categoryName ||
+        categories.find(c => c.id === bc.targetFilter?.categoryId)?.name ||
+        'Kategori';
+      return (
+        <span className="bg-purple-50 text-purple-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-purple-100">
+          Target: Kategori {catName}
+        </span>
+      );
+    }
+    return (
+      <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-slate-200">
+        Target: {bc.targetType}
+      </span>
+    );
   };
 
   return (
@@ -79,9 +123,7 @@ export const BroadcastView: React.FC = () => {
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-slate-900 text-sm">{bc.title}</span>
-                  <span className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-100">
-                    Target: {bc.targetType === 'ALL' ? 'Semua Warga' : `${bc.targetType} (${bc.targetFilter?.rw || ''})`}
-                  </span>
+                  {renderTargetBadge(bc)}
                 </div>
                 <span className="text-[11px] text-slate-400">
                   {new Date(bc.createdAt).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}
@@ -122,26 +164,54 @@ export const BroadcastView: React.FC = () => {
 
               <div>
                 <label className="block font-bold uppercase text-slate-700 mb-1">Sasaran Penerima (Target)</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <select
                     value={targetType}
                     onChange={(e) => setTargetType(e.target.value as any)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white"
                   >
                     <option value="ALL">Semua Pelanggan</option>
                     <option value="RW">Wilayah RW Tertentu</option>
+                    <option value="CATEGORY">Kategori Pelanggan Tertentu</option>
                   </select>
 
                   {targetType === 'RW' && (
                     <select
                       value={targetRW}
                       onChange={(e) => setTargetRW(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white"
                     >
                       {uniqueRWs.map(rw => <option key={rw} value={rw}>{rw}</option>)}
                     </select>
                   )}
+
+                  {targetType === 'CATEGORY' && (
+                    <select
+                      value={targetCategory}
+                      onChange={(e) => setTargetCategory(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-semibold text-slate-800"
+                    >
+                      {categories.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
+
+                {targetType === 'CATEGORY' && (
+                  <p className="text-[11px] text-purple-700 bg-purple-50 px-2.5 py-1.5 rounded-xl border border-purple-100 mt-2 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+                    <span>Pengumuman hanya akan diterima oleh pelanggan dengan kategori <strong>{categories.find(c => c.id === targetCategory)?.name || 'terpilih'}</strong>.</span>
+                  </p>
+                )}
+                {targetType === 'RW' && (
+                  <p className="text-[11px] text-blue-700 bg-blue-50 px-2.5 py-1.5 rounded-xl border border-blue-100 mt-2 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                    <span>Pengumuman hanya akan diterima oleh warga yang berada di wilayah <strong>{targetRW}</strong>.</span>
+                  </p>
+                )}
               </div>
 
               <div>
