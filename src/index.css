@@ -16,24 +16,49 @@
   z-index: 10;
 }
 
-/* Print styles for digital receipts */
+/* Print styles for digital receipts and official reports */
 @media print {
+  @page {
+    margin: 12mm 15mm 15mm 15mm;
+    size: auto;
+  }
+  body {
+    background: white !important;
+    color: #0f172a !important;
+  }
   body * {
     visibility: hidden;
   }
-  #printable-receipt, #printable-receipt * {
+  #printable-receipt, #printable-receipt *,
+  #printable-report, #printable-report * {
     visibility: visible;
   }
-  #printable-receipt {
+  #printable-receipt, #printable-report {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     margin: 0;
-    padding: 20px;
-    background: white;
+    padding: 0;
+    background: white !important;
+    color: #0f172a !important;
   }
   .no-print {
     display: none !important;
+  }
+  /* Table styling during print */
+  #printable-report table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  #printable-report th, #printable-report td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 10px !important;
+    font-size: 9pt !important;
+  }
+  #printable-report th {
+    background-color: #f1f5f9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

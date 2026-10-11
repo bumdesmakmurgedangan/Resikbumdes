@@ -1305,24 +1305,42 @@ class DataService {
     XLSX.writeFile(workbook, `Data_Pelanggan_RESIK_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
 
-  public exportPaymentsToExcel() {
-    const payments = this.getPayments();
+  public exportPaymentsToExcel(filteredPayments?: Payment[], periodLabel?: string) {
+    const payments = filteredPayments || this.getPayments();
     const rows = payments.map(p => ({
-      'No. Bukti': p.receiptNumber || 'MENUNGGU',
-      'Pelanggan': p.customerName,
-      'Layanan': p.serviceName,
-      'Periode': p.billPeriod,
-      'Nominal (Rp)': p.amount,
-      'Metode': p.paymentMethod,
+      'No. Bukti / Kuitansi': p.receiptNumber || 'MENUNGGU',
+      'Nama Pelanggan': p.customerName,
+      'Objek Layanan': p.serviceName,
+      'Periode Iuran': p.billPeriod,
+      'Nominal (Rp)': Number(p.amount),
+      'Metode Pembayaran': p.paymentMethod,
       'Status': p.status,
-      'Tanggal Bayar': new Date(p.paymentDate).toLocaleString('id-ID'),
+      'Tanggal Pembayaran': new Date(p.paymentDate).toLocaleString('id-ID'),
       'Petugas / Verifikator': p.verifiedByName || p.recordedByName || '-'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Pembayaran');
-    XLSX.writeFile(workbook, `Laporan_Pembayaran_RESIK_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const cleanSuffix = periodLabel ? `_${periodLabel.replace(/[\s\/\\]+/g, '_')}` : '';
+    XLSX.writeFile(workbook, `Laporan_Pembayaran_RESIK${cleanSuffix}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }
+
+  public exportOverdueToExcel(overdueItems: any[], periodLabel?: string) {
+    const rows = overdueItems.map(item => ({
+      'Kode Pelanggan': item.customer.customerCode,
+      'Nama Pelanggan': item.customer.name,
+      'Nomor WhatsApp': item.customer.phone || '-',
+      'Alamat': item.customer.address || '-',
+      'Bulan Tertunggak': item.unpaidMonths.join(', '),
+      'Total Tunggakan (Rp)': item.totalAmount
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Tunggakan');
+    const cleanSuffix = periodLabel ? `_${periodLabel.replace(/[\s\/\\]+/g, '_')}` : '';
+    XLSX.writeFile(workbook, `Laporan_Tunggakan_RESIK${cleanSuffix}_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
 
   // ----------------------------------------------------

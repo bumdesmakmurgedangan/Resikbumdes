@@ -41,7 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, sidebarOpen }) 
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-2.5 transition-all">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-2.5 transition-all no-print">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         {/* Left: Mobile hamburger & Logo */}
         <div className="flex items-center gap-3">
