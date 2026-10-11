@@ -5,8 +5,9 @@ import { Customer, ServiceLocation, Category, Tariff, Region } from '../types';
 import {
   Users, UserPlus, Search, Edit3, Key, Plus,
   Home, Store, Building, MapPin, CheckCircle2, XCircle,
-  Eye, RefreshCw, AlertCircle, Navigation, ExternalLink
+  Eye, RefreshCw, AlertCircle, Navigation, ExternalLink, Check
 } from 'lucide-react';
+import { parseGoogleMapsLocation } from '../utils/geoUtils';
 
 export const CustomersView: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
@@ -39,6 +40,8 @@ export const CustomersView: React.FC = () => {
   const [newCategoryId, setNewCategoryId] = useState(categories[0]?.id || '');
   const [newLat, setNewLat] = useState<string>('');
   const [newLng, setNewLng] = useState<string>('');
+  const [gmapsInput, setGmapsInput] = useState('');
+  const [detectedCoord, setDetectedCoord] = useState<{ latitude: number; longitude: number } | null>(null);
 
   // Add Service to Existing Customer Modal
   const [addServiceModalOpen, setAddServiceModalOpen] = useState(false);
@@ -47,6 +50,47 @@ export const CustomersView: React.FC = () => {
   const [srvRW, setSrvRW] = useState('RW 01');
   const [srvRT, setSrvRT] = useState('RT 01');
   const [srvCategoryId, setSrvCategoryId] = useState(categories[0]?.id || '');
+  const [srvLat, setSrvLat] = useState<string>('');
+  const [srvLng, setSrvLng] = useState<string>('');
+  const [srvGmapsInput, setSrvGmapsInput] = useState('');
+  const [srvDetectedCoord, setSrvDetectedCoord] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  // Handlers for Google Maps location auto-detection
+  const handleGmapsPaste = (val: string) => {
+    setGmapsInput(val);
+    const parsed = parseGoogleMapsLocation(val);
+    if (parsed) {
+      setNewLat(parsed.latitude.toString());
+      setNewLng(parsed.longitude.toString());
+      setDetectedCoord(parsed);
+    } else {
+      setDetectedCoord(null);
+    }
+  };
+
+  const handleLatChange = (val: string) => {
+    const parsed = parseGoogleMapsLocation(val);
+    if (parsed && (val.includes(',') || val.includes('http') || val.includes('@') || val.includes(' '))) {
+      setNewLat(parsed.latitude.toString());
+      setNewLng(parsed.longitude.toString());
+      setDetectedCoord(parsed);
+      setGmapsInput(val);
+    } else {
+      setNewLat(val);
+    }
+  };
+
+  const handleSrvGmapsPaste = (val: string) => {
+    setSrvGmapsInput(val);
+    const parsed = parseGoogleMapsLocation(val);
+    if (parsed) {
+      setSrvLat(parsed.latitude.toString());
+      setSrvLng(parsed.longitude.toString());
+      setSrvDetectedCoord(parsed);
+    } else {
+      setSrvDetectedCoord(null);
+    }
+  };
 
   // Reset PIN notification modal
   const [resetPinResult, setResetPinResult] = useState<{ code: string; tempPin: string } | null>(null);
@@ -106,6 +150,10 @@ export const CustomersView: React.FC = () => {
       setNewName('');
       setNewPhone('');
       setNewAddress('');
+      setNewLat('');
+      setNewLng('');
+      setGmapsInput('');
+      setDetectedCoord(null);
       setRefreshKey(prev => prev + 1);
     } catch (err: any) {
       alert(err.message || 'Gagal mendaftarkan pelanggan');
@@ -130,6 +178,8 @@ export const CustomersView: React.FC = () => {
         rw: srvRW,
         categoryId: srvCategoryId,
         tariffId: selectedTariff?.id || 'trf-1',
+        latitude: srvLat ? parseFloat(srvLat) : null,
+        longitude: srvLng ? parseFloat(srvLng) : null,
         status: 'ACTIVE'
       }, currentUser);
 
@@ -137,6 +187,10 @@ export const CustomersView: React.FC = () => {
       setAddServiceModalOpen(false);
       setSrvObjectName('');
       setSrvAddress('');
+      setSrvLat('');
+      setSrvLng('');
+      setSrvGmapsInput('');
+      setSrvDetectedCoord(null);
       setRefreshKey(prev => prev + 1);
     } catch (err: any) {
       alert(err.message || 'Gagal menambah layanan');
@@ -420,13 +474,61 @@ export const CustomersView: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Opsi Cepat: Tempel Titik / Link dari Google Maps */}
+                <div className="bg-emerald-50/70 border border-emerald-200/90 rounded-2xl p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block font-bold uppercase text-[10px] text-emerald-900 tracking-wider flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Tempel Titik / Link Google Maps (Otomatis)</span>
+                    </label>
+                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                      Auto Deteksi GPS
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={gmapsInput}
+                      onChange={(e) => handleGmapsPaste(e.target.value)}
+                      placeholder="Paste koordinat (-7.3885, 112.7214) atau link Google Maps di sini..."
+                      className="w-full pl-3 pr-28 py-2 bg-white border border-emerald-300 focus:border-emerald-500 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:ring-1 focus:ring-emerald-500 shadow-2xs"
+                    />
+                    {detectedCoord ? (
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-lg flex items-center gap-1 border border-emerald-200">
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span>Terdeteksi!</span>
+                      </span>
+                    ) : gmapsInput.trim() ? (
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-lg">
+                        Format belum cocok
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-500">
+                    <span>💡 Cukup copy dari Google Maps lalu paste di atas. Latitude & Longitude terisi otomatis.</span>
+                    {detectedCoord && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${detectedCoord.latitude},${detectedCoord.longitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-emerald-700 font-bold hover:underline flex items-center gap-0.5 shrink-0"
+                      >
+                        <span>Cek di Peta</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold uppercase text-slate-700 mb-1">Latitude (Opsional)</label>
                     <input
                       type="text"
                       value={newLat}
-                      onChange={(e) => setNewLat(e.target.value)}
+                      onChange={(e) => handleLatChange(e.target.value)}
                       placeholder="-7.3885"
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono"
                     />
@@ -621,6 +723,58 @@ export const CustomersView: React.FC = () => {
                 >
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
+              </div>
+
+              {/* Opsi Cepat: Tempel Titik / Link dari Google Maps */}
+              <div className="bg-emerald-50/70 border border-emerald-200/90 rounded-2xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold uppercase text-[10px] text-emerald-900 tracking-wider flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Tempel Titik / Link Google Maps (Otomatis)</span>
+                  </label>
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                    Auto Deteksi GPS
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={srvGmapsInput}
+                    onChange={(e) => handleSrvGmapsPaste(e.target.value)}
+                    placeholder="Paste koordinat (-7.3885, 112.7214) atau link Google Maps..."
+                    className="w-full pl-3 pr-28 py-2 bg-white border border-emerald-300 focus:border-emerald-500 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:ring-1 focus:ring-emerald-500"
+                  />
+                  {srvDetectedCoord ? (
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-lg flex items-center gap-1 border border-emerald-200">
+                      <Check className="w-3 h-3 text-emerald-600" />
+                      <span>Terdeteksi!</span>
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">Latitude (Opsional)</label>
+                  <input
+                    type="text"
+                    value={srvLat}
+                    onChange={(e) => setSrvLat(e.target.value)}
+                    placeholder="-7.3885"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">Longitude (Opsional)</label>
+                  <input
+                    type="text"
+                    value={srvLng}
+                    onChange={(e) => setSrvLng(e.target.value)}
+                    placeholder="112.7214"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">

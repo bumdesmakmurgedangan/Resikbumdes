@@ -107,6 +107,17 @@ export const ImportExportView: React.FC = () => {
             </button>
           </div>
 
+          {/* Info Box: Dukungan Google Maps */}
+          <div className="p-3 bg-brand-50/70 border border-brand-200/80 rounded-2xl flex items-start gap-2.5 text-xs text-brand-950">
+            <span className="text-base leading-none mt-0.5">📍</span>
+            <div>
+              <div className="font-bold text-brand-900">Mendukung Titik / Link Google Maps</div>
+              <p className="text-[11px] text-brand-800/90 mt-0.5 leading-relaxed">
+                Template menyediakan kolom <strong>Titik Lokasi Google Maps</strong>. Cukup paste link Google Maps atau angka koordinat (contoh: <code className="font-mono bg-white/80 px-1 py-0.5 rounded text-[10px]">-7.3885, 112.7214</code>), sistem akan otomatis mengekstrak Latitude &amp; Longitude.
+              </p>
+            </div>
+          </div>
+
           {/* Step 2: Upload File */}
           <div className="space-y-2">
             <label className="block text-xs font-bold uppercase text-slate-700">
@@ -185,6 +196,7 @@ export const ImportExportView: React.FC = () => {
                     <th className="py-2 px-3">Alamat</th>
                     <th className="py-2 px-3">RW / RT</th>
                     <th className="py-2 px-3">Kategori</th>
+                    <th className="py-2 px-3">Titik / GPS</th>
                     <th className="py-2 px-3">Tarif</th>
                   </tr>
                 </thead>
@@ -197,6 +209,9 @@ export const ImportExportView: React.FC = () => {
                       <td className="py-2 px-3">{row['Alamat'] || row['alamat'] || '-'}</td>
                       <td className="py-2 px-3">{row['RW'] || row['rw']} / {row['RT'] || row['rt']}</td>
                       <td className="py-2 px-3">{row['Kategori'] || row['kategori'] || 'Rumah Tangga'}</td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-slate-500 max-w-[140px] truncate" title={String(row['Titik Lokasi Google Maps'] || row['Link Google Maps'] || row['Latitude'] || '-')}>
+                        {row['Titik Lokasi Google Maps'] || row['Link Google Maps'] || (row['Latitude'] ? `${row['Latitude']}, ${row['Longitude'] || ''}` : '-')}
+                      </td>
                       <td className="py-2 px-3 font-bold text-brand-800">Rp {Number(row['Tarif'] || row['tarif'] || 20000).toLocaleString('id-ID')}</td>
                     </tr>
                   ))}

@@ -12,6 +12,7 @@ import {
   INITIAL_BILLS, INITIAL_PAYMENTS, INITIAL_BROADCASTS, INITIAL_AUDIT_LOGS
 } from './mockData';
 import * as XLSX from 'xlsx';
+import { parseGoogleMapsLocation } from '../utils/geoUtils';
 
 const STORAGE_KEYS = {
   SETTINGS: 'resik_settings',
@@ -1006,6 +1007,7 @@ class DataService {
         'Kategori': 'Rumah Tangga',
         'Nama Objek': 'Rumah Tinggal',
         'Tarif': 20000,
+        'Titik Lokasi Google Maps': '-7.3885, 112.7214',
         'Latitude': -7.3885,
         'Longitude': 112.7214
       },
@@ -1018,6 +1020,7 @@ class DataService {
         'Kategori': 'UMKM',
         'Nama Objek': 'Toko Sembako Berkah',
         'Tarif': 35000,
+        'Titik Lokasi Google Maps': 'https://maps.google.com/?q=-7.3865,112.7190',
         'Latitude': -7.3865,
         'Longitude': 112.7190
       }
@@ -1055,8 +1058,42 @@ class DataService {
       const categoryName = (row['Kategori'] || row['kategori'] || 'Rumah Tangga').toLowerCase().trim();
       const objectName = row['Nama Objek'] || row['namaObjek'] || row['Objek'] || 'Rumah';
       const tariffRaw = row['Tarif'] || row['tarif'] || 20000;
-      const lat = row['Latitude'] || row['latitude'] ? parseFloat(row['Latitude'] || row['latitude']) : null;
-      const lng = row['Longitude'] || row['longitude'] ? parseFloat(row['Longitude'] || row['longitude']) : null;
+
+      // Intelligent extraction of GPS coordinates from either Google Maps link/point or separate lat/lng
+      let lat: number | null = null;
+      let lng: number | null = null;
+
+      const rawLat = row['Latitude'] || row['latitude'] || row['Lat'] || row['lat'];
+      const rawLng = row['Longitude'] || row['longitude'] || row['Lng'] || row['lng'] || row['Long'] || row['long'];
+      const gmapsRaw = row['Titik Lokasi Google Maps'] || row['Titik Lokasi'] ||
+        row['Link Google Maps'] || row['Google Maps'] || row['Koordinat'] ||
+        row['Koordinat Google Maps'] || row['Lokasi Google Maps'] || row['Maps'] ||
+        row['titik_lokasi'] || row['link_maps'] || row['gmaps'] || '';
+
+      if (gmapsRaw) {
+        const parsed = parseGoogleMapsLocation(gmapsRaw);
+        if (parsed) {
+          lat = parsed.latitude;
+          lng = parsed.longitude;
+        }
+      }
+
+      if (lat === null && rawLat) {
+        const parsed = parseGoogleMapsLocation(rawLat);
+        if (parsed) {
+          lat = parsed.latitude;
+          lng = parsed.longitude;
+        } else if (!isNaN(parseFloat(String(rawLat)))) {
+          lat = parseFloat(String(rawLat));
+        }
+      }
+
+      if (lng === null && rawLng) {
+        const parsedLng = parseFloat(String(rawLng));
+        if (!isNaN(parsedLng)) {
+          lng = parsedLng;
+        }
+      }
 
       // Validation
       if (!name || String(name).trim().length < 2) {
