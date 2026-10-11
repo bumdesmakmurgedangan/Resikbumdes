@@ -263,7 +263,8 @@ export interface SystemSettings {
   address: string;
   phoneWhatsapp: string;
   email: string;
-  website: string;
+  website: string; // Website Utama BUMDes (profil)
+  appUrl?: string; // Subdomain Web App Layanan RESIK (https://resik.bumdesmakmurgedangan.my.id/)
   defaultDueDay: number;
   qrisImageUrl: string;
   qrisDescription: string;

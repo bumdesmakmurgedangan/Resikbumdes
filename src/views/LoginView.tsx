@@ -98,10 +98,10 @@ export const LoginView: React.FC = () => {
               </div>
             )}
 
-            {/* URL Website BUMDes Text Only */}
-            {settings.website && settings.website.trim().length > 0 && (
-              <p className="text-xs text-slate-500 font-medium mt-2.5 tracking-wide select-all">
-                {settings.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+            {/* URL Web App Subdomain / Website BUMDes Text Only */}
+            {(settings.appUrl || settings.website) && (
+              <p className="text-xs text-slate-500 font-medium mt-2.5 tracking-wide select-all font-mono">
+                {(settings.appUrl || settings.website).replace(/^https?:\/\//, '').replace(/\/$/, '')}
               </p>
             )}
           </div>

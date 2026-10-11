@@ -58,6 +58,9 @@ class DataService {
 
   constructor() {
     this.settings = this.load(STORAGE_KEYS.SETTINGS, INITIAL_SYSTEM_SETTINGS);
+    if (!this.settings.appUrl) {
+      this.settings.appUrl = INITIAL_SYSTEM_SETTINGS.appUrl || 'https://resik.bumdesmakmurgedangan.my.id/';
+    }
     this.users = this.load(STORAGE_KEYS.USERS, INITIAL_USERS);
     this.roles = this.load(STORAGE_KEYS.ROLES, INITIAL_ROLES);
     this.permissions = INITIAL_PERMISSIONS;
@@ -73,6 +76,12 @@ class DataService {
         this.templates.push({ ...initTpl });
       }
     });
+    // Ensure template mt-2 uses {link_resik} if cached previously with {link_web}
+    const mt2 = this.templates.find(t => t.type === 'WHATSAPP_ACCOUNT_CONFIRMATION');
+    if (mt2 && mt2.content.includes('{link_web}')) {
+      mt2.content = mt2.content.replace('{link_web}', '{link_resik}');
+      this.save(STORAGE_KEYS.TEMPLATES, this.templates);
+    }
     this.orgLinks = this.load(STORAGE_KEYS.ORG_LINKS, INITIAL_ORGANIZATION_LINKS);
     // Sanitize cached labels to clean app names
     const cleanBrandNames: Record<string, string> = {
@@ -1221,7 +1230,8 @@ class DataService {
       template = INITIAL_MESSAGE_TEMPLATES.find(t => t.type === 'WHATSAPP_ACCOUNT_CONFIRMATION') || this.templates[0];
     }
 
-    const websiteUrl = this.settings.website || 'https://bumdesgedangan.id';
+    const websiteUrl = this.settings.website || 'https://bumdesmakmurgedangan.my.id';
+    const resikAppUrl = this.settings.appUrl || 'https://resik.bumdesmakmurgedangan.my.id/';
     const content = template?.content || '';
 
     const text = content
@@ -1233,6 +1243,9 @@ class DataService {
       .replace(/{alamat}/g, params.address || '-')
       .replace(/{nama_bumdes}/g, this.settings.bumdesName)
       .replace(/{nomor_bumdes}/g, this.settings.phoneWhatsapp)
+      .replace(/{link_resik}/g, resikAppUrl)
+      .replace(/{link_webapp_resik}/g, resikAppUrl)
+      .replace(/{link_app}/g, resikAppUrl)
       .replace(/{link_web}/g, websiteUrl);
 
     let cleanPhone = params.phone.replace(/\D/g, '');
@@ -1276,7 +1289,11 @@ class DataService {
       .replace(/{jumlah_tunggakan}/g, `${overdueBills.length} bulan`)
       .replace(/{rincian_tunggakan}/g, breakdownText)
       .replace(/{nama_bumdes}/g, this.settings.bumdesName)
-      .replace(/{nomor_bumdes}/g, this.settings.phoneWhatsapp);
+      .replace(/{nomor_bumdes}/g, this.settings.phoneWhatsapp)
+      .replace(/{link_resik}/g, this.settings.appUrl || 'https://resik.bumdesmakmurgedangan.my.id/')
+      .replace(/{link_webapp_resik}/g, this.settings.appUrl || 'https://resik.bumdesmakmurgedangan.my.id/')
+      .replace(/{link_app}/g, this.settings.appUrl || 'https://resik.bumdesmakmurgedangan.my.id/')
+      .replace(/{link_web}/g, this.settings.website || 'https://bumdesmakmurgedangan.my.id');
 
     // Format phone number to international wa.me format (PRD Section 47)
     let cleanPhone = cust.phone.replace(/\D/g, '');

@@ -13,7 +13,8 @@ export const INITIAL_SYSTEM_SETTINGS: SystemSettings = {
   address: 'Jl. Raya Gedangan No. 45, Kec. Gedangan, Kab. Sidoarjo, Jawa Timur 61254',
   phoneWhatsapp: '085150736692',
   email: 'bumdes.gedangan@gmail.com',
-  website: 'https://bumdesgedangan.id',
+  website: 'https://bumdesmakmurgedangan.my.id',
+  appUrl: 'https://resik.bumdesmakmurgedangan.my.id/',
   defaultDueDay: 10,
   qrisImageUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=00020101021226580014ID.LINKAJA.WWW011893600914300000000151440014ID.CO.QRIS.WWW0215ID10200212345670303UMI5204549953033605802ID5922BUMDES+MAKMUR+GEDANGAN6008SIDOARJO61056125462070703A0163041A2B',
   qrisDescription: 'Scan QRIS RESIK BUMDes Makmur Gedangan melalui BCA Mobile, BRImo, Mandiri Livin, BNI, Dana, OVO, GoPay, ShopeePay, atau LinkAja.',
@@ -276,7 +277,7 @@ Berikut informasi akun Anda:
 • Alamat: {alamat}
 
 Anda dapat masuk ke sistem RESIK menggunakan ID Pelanggan ATAU No. HP terdaftar beserta PIN awal di:
-{link_web}
+{link_resik}
 
 Silakan masuk untuk mengecek jadwal penarikan, riwayat iuran, atau pembayaran mandiri secara praktis.
 Mohon segera ganti PIN Anda setelah berhasil masuk untuk keamanan akun.
