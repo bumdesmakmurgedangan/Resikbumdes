@@ -649,121 +649,150 @@ export const CustomersView: React.FC = () => {
       {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+          <table className="w-full text-left text-xs divide-y divide-slate-200">
+            <thead className="bg-slate-50 text-slate-600 uppercase tracking-wider font-bold text-[11px]">
               <tr>
-                <th className="py-3 px-3">ID Pelanggan</th>
-                <th className="py-3 px-3">Nama & Alamat</th>
-                <th className="py-3 px-3">No HP / WhatsApp</th>
-                <th className="py-3 px-3">Lokasi Layanan</th>
-                <th className="py-3 px-3">Status</th>
-                <th className="py-3 px-3 text-right">Aksi</th>
+                <th className="py-3.5 px-4 w-32 whitespace-nowrap">ID Pelanggan</th>
+                <th className="py-3.5 px-4 min-w-[200px]">Nama &amp; Alamat</th>
+                <th className="py-3.5 px-4 w-36 whitespace-nowrap">No HP / WhatsApp</th>
+                <th className="py-3.5 px-4 min-w-[300px]">Lokasi Layanan &amp; Tarif</th>
+                <th className="py-3.5 px-4 text-center w-28 whitespace-nowrap">Status</th>
+                <th className="py-3.5 px-4 text-right w-64 whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredCustomers.map((cust) => {
-                const custServices = allServices.filter(s => s.customerId === cust.id);
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {filteredCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <Users className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                    <p className="font-semibold text-sm text-slate-600">Tidak ada data pelanggan yang cocok</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Coba ubah kata kunci pencarian atau filter RW / Kategori</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredCustomers.map((cust) => {
+                  const custServices = allServices.filter(s => s.customerId === cust.id);
 
-                return (
-                  <tr key={cust.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3 px-3">
-                      <span className="font-mono font-bold text-brand-800 text-xs">
-                        {cust.customerCode}
-                      </span>
-                      {cust.isDefaultPin && (
-                        <div className="text-[10px] text-amber-600 font-medium">PIN Default</div>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-3">
-                      <div className="font-bold text-slate-900">{cust.name}</div>
-                      <div className="text-[11px] text-slate-500 max-w-xs truncate">{cust.address}</div>
-                    </td>
-
-                    <td className="py-3 px-3 font-mono">
-                      {cust.phone ? (
-                        <span className="text-slate-800">{cust.phone}</span>
-                      ) : (
-                        <span className="text-slate-400 italic">Tidak ada</span>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-3">
-                      <div className="space-y-1">
-                        {custServices.map(s => (
-                          <div key={s.id} className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-semibold text-slate-800 text-[11px]">{s.name} ({s.rw})</span>
-                            <span className="bg-slate-100 text-slate-600 font-bold px-1.5 py-0.2 rounded text-[9px]">
-                              {s.categoryName || 'Rumah Tangga'}
-                            </span>
-                            <span className="font-mono text-brand-800 font-bold text-[10px]">
-                              Rp {s.tariffAmount?.toLocaleString('id-ID')}/bln
-                            </span>
-                            {s.customTariffAmount && s.customTariffAmount > 0 ? (
-                              <span className="bg-amber-100 text-amber-800 font-black text-[9px] px-1.5 py-0.2 rounded border border-amber-200">
-                                Tarif Khusus
-                              </span>
-                            ) : null}
+                  return (
+                    <tr key={cust.id} className="hover:bg-slate-50/70 transition">
+                      <td className="py-3.5 px-4 align-middle whitespace-nowrap">
+                        <span className="font-mono font-bold text-brand-800 text-xs bg-brand-50 border border-brand-200/80 px-2 py-0.5 rounded-md inline-block">
+                          {cust.customerCode}
+                        </span>
+                        {cust.isDefaultPin && (
+                          <div className="text-[10px] text-amber-600 font-semibold mt-1 flex items-center gap-1">
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            PIN Default
                           </div>
-                        ))}
-                      </div>
-                    </td>
+                        )}
+                      </td>
 
-                    <td className="py-3 px-3">
-                      {cust.status === 'ACTIVE' ? (
-                        <span className="bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full text-[10px]">
-                          Aktif
-                        </span>
-                      ) : (
-                        <span className="bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full text-[10px]">
-                          Nonaktif
-                        </span>
-                      )}
-                    </td>
+                      <td className="py-3.5 px-4 align-middle">
+                        <div className="font-bold text-slate-900 text-xs">{cust.name}</div>
+                        <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5" title={cust.address}>
+                          {cust.address}
+                        </div>
+                      </td>
 
-                    <td className="py-3 px-3 text-right space-x-1.5 whitespace-nowrap">
-                      <button
-                        onClick={() => setSelectedCustomer(cust)}
-                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg text-slate-700 font-semibold transition cursor-pointer"
-                        title="Lihat Detail, Riwayat Tagihan & Layanan"
-                      >
-                        Detail &amp; Layanan
-                      </button>
+                      <td className="py-3.5 px-4 align-middle whitespace-nowrap font-mono text-xs">
+                        {cust.phone ? (
+                          <span className="text-slate-800 font-medium">{cust.phone}</span>
+                        ) : (
+                          <span className="text-slate-400 italic">Tidak ada</span>
+                        )}
+                      </td>
 
-                      <button
-                        onClick={() => handleOpenEditCustomer(cust)}
-                        className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer"
-                        title="Edit Data Pelanggan, Kategori & Tarif Khusus"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>Edit / Tarif</span>
-                      </button>
+                      <td className="py-3.5 px-4 align-middle">
+                        <div className="flex flex-col gap-1.5">
+                          {custServices.length === 0 ? (
+                            <span className="text-slate-400 italic text-[11px]">Belum ada lokasi layanan</span>
+                          ) : (
+                            custServices.map(s => (
+                              <div
+                                key={s.id}
+                                className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200/90 px-2.5 py-1 rounded-lg text-xs transition w-fit max-w-full"
+                              >
+                                <span className="font-semibold text-slate-800 whitespace-nowrap text-[11px]">
+                                  {s.name} <span className="text-slate-400 font-normal">({s.rw})</span>
+                                </span>
+                                <span className="inline-block w-1 h-1 rounded-full bg-slate-300" />
+                                <span className="bg-white text-slate-600 font-semibold px-1.5 py-0.5 rounded border border-slate-200 text-[10px] whitespace-nowrap">
+                                  {s.categoryName || 'Rumah Tangga'}
+                                </span>
+                                <span className="font-mono text-brand-800 font-bold text-[11px] whitespace-nowrap">
+                                  Rp {s.tariffAmount?.toLocaleString('id-ID')}<span className="text-[9px] font-normal text-slate-400">/bln</span>
+                                </span>
+                                {s.customTariffAmount && s.customTariffAmount > 0 ? (
+                                  <span className="bg-amber-100 text-amber-800 font-bold text-[9px] px-1.5 py-0.5 rounded border border-amber-300 whitespace-nowrap">
+                                    Tarif Khusus
+                                  </span>
+                                ) : null}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </td>
 
-                      <button
-                        onClick={() => handleResetPin(cust)}
-                        className="px-2 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs transition inline-flex items-center"
-                        title="Reset PIN Pelanggan"
-                      >
-                        <Key className="w-3.5 h-3.5" />
-                      </button>
+                      <td className="py-3.5 px-4 align-middle text-center whitespace-nowrap">
+                        {cust.status === 'ACTIVE' ? (
+                          <span className="bg-emerald-50 text-emerald-700 font-bold px-2.5 py-1 rounded-full text-[10px] border border-emerald-200 inline-block">
+                            Aktif
+                          </span>
+                        ) : (
+                          <span className="bg-slate-100 text-slate-500 font-bold px-2.5 py-1 rounded-full text-[10px] border border-slate-200 inline-block">
+                            Nonaktif
+                          </span>
+                        )}
+                      </td>
 
-                      <button
-                        onClick={() => handleToggleStatus(cust)}
-                        className={`px-2 py-1.5 rounded-lg text-xs transition inline-flex items-center ${
-                          cust.status === 'ACTIVE'
-                            ? 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-                            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                        }`}
-                        title={cust.status === 'ACTIVE' ? 'Nonaktifkan Pelanggan' : 'Aktifkan Pelanggan'}
-                      >
-                        {cust.status === 'ACTIVE' ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td className="py-3.5 px-4 align-middle text-right whitespace-nowrap space-x-1.5">
+                        <button
+                          onClick={() => setSelectedCustomer(cust)}
+                          className="px-2.5 py-1.5 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg text-slate-700 font-semibold transition cursor-pointer text-xs"
+                          title="Lihat Detail, Riwayat Tagihan & Layanan"
+                        >
+                          Detail &amp; Layanan
+                        </button>
+
+                        <button
+                          onClick={() => handleOpenEditCustomer(cust)}
+                          className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer border border-blue-200/60"
+                          title="Edit Data Pelanggan, Kategori & Tarif Khusus"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Edit / Tarif</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleResetPin(cust)}
+                          className="px-2 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs transition inline-flex items-center border border-amber-200/60 cursor-pointer"
+                          title="Reset PIN Pelanggan"
+                        >
+                          <Key className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => handleToggleStatus(cust)}
+                          className={`px-2 py-1.5 rounded-lg text-xs transition inline-flex items-center border cursor-pointer ${
+                            cust.status === 'ACTIVE'
+                              ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200/60'
+                              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200/60'
+                          }`}
+                          title={cust.status === 'ACTIVE' ? 'Nonaktifkan Pelanggan' : 'Aktifkan Pelanggan'}
+                        >
+                          {cust.status === 'ACTIVE' ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
+        </div>
+        <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between">
+          <span>Menampilkan <strong>{filteredCustomers.length}</strong> dari <strong>{customers.length}</strong> pelanggan terdaftar</span>
+          <span className="text-[11px] text-slate-400 hidden sm:inline">Pilih tombol &quot;Edit / Tarif&quot; untuk mengubah kategori atau tarif khusus pelanggan</span>
         </div>
       </div>
       </>
@@ -1021,14 +1050,26 @@ export const CustomersView: React.FC = () => {
 
       {/* ================= ADD CUSTOMER MODAL ================= */}
       {addCustomerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 overflow-y-auto max-h-[92vh]">
-            <h3 className="font-bold text-base text-slate-900 mb-1">Daftarkan Pelanggan Baru</h3>
-            <p className="text-xs text-slate-500 mb-4">
-              ID Pelanggan dan PIN awal (1234) akan dibuatkan secara otomatis oleh sistem RESIK.
-            </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-100 my-auto">
+            <div className="flex items-start justify-between p-5 sm:p-6 pb-3 border-b border-slate-100 shrink-0">
+              <div>
+                <h3 className="font-bold text-base text-slate-900 mb-1">Daftarkan Pelanggan Baru</h3>
+                <p className="text-xs text-slate-500">
+                  ID Pelanggan dan PIN awal (1234) akan dibuatkan secara otomatis oleh sistem RESIK.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddCustomerModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer transition hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-            <form onSubmit={handleCreateCustomer} className="space-y-3.5 text-xs">
+            <form onSubmit={handleCreateCustomer} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-5 sm:p-6 pt-4 overflow-y-auto overscroll-contain space-y-3.5 text-xs flex-1">
               <div>
                 <label className="block font-bold uppercase text-slate-700 mb-1">Nama Lengkap Warga</label>
                 <input
@@ -1218,20 +1259,22 @@ export const CustomersView: React.FC = () => {
                   </div>
                 </div>
               </div>
+              </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+              {/* Footer - Fixed */}
+              <div className="p-4 px-6 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setAddCustomerModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold"
+                  className="px-4 py-2 border border-slate-300 hover:bg-white rounded-xl text-slate-700 font-semibold transition cursor-pointer text-xs"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition shadow-sm"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer text-xs"
                 >
-                  Simpan & Buat Akun
+                  Simpan &amp; Buat Akun
                 </button>
               </div>
             </form>
@@ -1652,9 +1695,10 @@ export const CustomersView: React.FC = () => {
 
       {/* ================= EXECUTE REGISTRATION MODAL ================= */}
       {executingReg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 overflow-y-auto max-h-[92vh]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-100 my-auto">
+            {/* Header - Fixed */}
+            <div className="flex items-center justify-between p-5 sm:p-6 pb-3 border-b border-slate-100 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
                   <UserPlus className="w-5 h-5" />
@@ -1667,139 +1711,143 @@ export const CustomersView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setExecutingReg(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer transition hover:bg-slate-100"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Ringkasan Data Warga */}
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl mb-4 space-y-1.5 text-xs">
-              <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Data Pemohon Warga:</div>
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Nama:</span>
-                  <span className="font-semibold text-slate-800">{executingReg.name}</span>
+            {/* Form Body - Scrollable */}
+            <form onSubmit={handleApproveRegistration} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-5 sm:p-6 pt-4 overflow-y-auto overscroll-contain space-y-4 text-xs flex-1">
+                {/* Ringkasan Data Warga */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5 text-xs">
+                  <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Data Pemohon Warga:</div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Nama:</span>
+                      <span className="font-semibold text-slate-800">{executingReg.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">No. WhatsApp:</span>
+                      <span className="font-semibold text-slate-800">{executingReg.phone}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Wilayah:</span>
+                      <span className="font-semibold text-slate-800">{executingReg.rw} / {executingReg.rt}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Alamat:</span>
+                      <span className="font-semibold text-slate-800 truncate block">{executingReg.address}</span>
+                    </div>
+                  </div>
+                  {(executingReg.googleMapsUrl || (executingReg.latitude && executingReg.longitude)) && (
+                    <div className="pt-1 text-[11px]">
+                      <a
+                        href={executingReg.googleMapsUrl || `https://maps.google.com/?q=${executingReg.latitude},${executingReg.longitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 hover:underline flex items-center gap-1 font-semibold"
+                      >
+                        <MapPin className="w-3.5 h-3.5 text-red-500" />
+                        <span>Cek Titik Rumah di Google Maps</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">No. WhatsApp:</span>
-                  <span className="font-semibold text-slate-800">{executingReg.phone}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Wilayah:</span>
-                  <span className="font-semibold text-slate-800">{executingReg.rw} / {executingReg.rt}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Alamat:</span>
-                  <span className="font-semibold text-slate-800 truncate block">{executingReg.address}</span>
-                </div>
-              </div>
-              {(executingReg.googleMapsUrl || (executingReg.latitude && executingReg.longitude)) && (
-                <div className="pt-1 text-[11px]">
-                  <a
-                    href={executingReg.googleMapsUrl || `https://maps.google.com/?q=${executingReg.latitude},${executingReg.longitude}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 hover:underline flex items-center gap-1 font-semibold"
-                  >
-                    <MapPin className="w-3.5 h-3.5 text-red-500" />
-                    <span>Cek Titik Rumah di Google Maps</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              )}
-            </div>
 
-            <form onSubmit={handleApproveRegistration} className="space-y-4 text-xs">
-              {/* Petugas / Admin Decision Fields */}
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  Nama Objek Layanan <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={execObjectName}
-                  onChange={(e) => setExecObjectName(e.target.value)}
-                  placeholder="Contoh: Rumah Tinggal / Toko Kelontong / Rumah Induk"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl"
-                />
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  Identitas fisik tempat sampah yang akan dilayani.
-                </p>
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  Kategori Pelanggan &amp; Tarif Iuran <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={execCategoryId}
-                  onChange={(e) => setExecCategoryId(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-medium"
-                >
-                  {categories.map((c) => {
-                    const trf = tariffs.find(t => t.categoryId === c.id);
-                    return (
-                      <option key={c.id} value={c.id}>
-                        {c.name} — Rp {(trf?.amount || 0).toLocaleString('id-ID')} / bulan
-                      </option>
-                    );
-                  })}
-                </select>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  Tarif iuran bulanan akan otomatis terhubung ke kategori yang dipilih.
-                </p>
-              </div>
-
-              {/* Custom Tarif Fleksibel (Opsional) */}
-              <div>
-                <label className="block font-bold uppercase text-[11px] text-slate-700 mb-1 flex items-center justify-between">
-                  <span>Tarif Khusus / Custom Fleksibel (Opsional)</span>
-                  <span className="text-[10px] text-brand-700 font-semibold lowercase">Bisa custom per pelanggan</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                {/* Petugas / Admin Decision Fields */}
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Nama Objek Layanan <span className="text-red-500">*</span>
+                  </label>
                   <input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={execCustomTariff}
-                    onChange={(e) => setExecCustomTariff(e.target.value)}
-                    placeholder={`Standar kategori: ${(tariffs.find(t => t.categoryId === execCategoryId)?.amount || 0).toLocaleString('id-ID')}`}
-                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-900"
+                    type="text"
+                    required
+                    value={execObjectName}
+                    onChange={(e) => setExecObjectName(e.target.value)}
+                    placeholder="Contoh: Rumah Tinggal / Toko Kelontong / Rumah Induk"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl"
                   />
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Identitas fisik tempat sampah yang akan dilayani.
+                  </p>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  Kosongkan jika menggunakan tarif standar kategori. Sangat bermanfaat bila usaha/toko ini bersepakat dengan tarif khusus.
-                </p>
-              </div>
 
-              {/* Preview ID Pelanggan dan PIN */}
-              <div className="p-3 bg-brand-50 border border-brand-200 rounded-2xl flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-brand-700">ID Pelanggan yang Akan Diterbitkan:</span>
-                  <div className="font-mono font-black text-sm text-brand-900 mt-0.5">
-                    {dataService.generateCustomerCode(executingReg.rw)}
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Kategori Pelanggan &amp; Tarif Iuran <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={execCategoryId}
+                    onChange={(e) => setExecCategoryId(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-medium"
+                  >
+                    {categories.map((c) => {
+                      const trf = tariffs.find(t => t.categoryId === c.id);
+                      return (
+                        <option key={c.id} value={c.id}>
+                          {c.name} — Rp {(trf?.amount || 0).toLocaleString('id-ID')} / bulan
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Tarif iuran bulanan akan otomatis terhubung ke kategori yang dipilih.
+                  </p>
+                </div>
+
+                {/* Custom Tarif Fleksibel (Opsional) */}
+                <div>
+                  <label className="block font-bold uppercase text-[11px] text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Tarif Khusus / Custom Fleksibel (Opsional)</span>
+                    <span className="text-[10px] text-brand-700 font-semibold lowercase">Bisa custom per pelanggan</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={execCustomTariff}
+                      onChange={(e) => setExecCustomTariff(e.target.value)}
+                      placeholder={`Standar kategori: ${(tariffs.find(t => t.categoryId === execCategoryId)?.amount || 0).toLocaleString('id-ID')}`}
+                      className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-900"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Kosongkan jika menggunakan tarif standar kategori. Sangat bermanfaat bila usaha/toko ini bersepakat dengan tarif khusus.
+                  </p>
+                </div>
+
+                {/* Preview ID Pelanggan dan PIN */}
+                <div className="p-3 bg-brand-50 border border-brand-200 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-brand-700">ID Pelanggan yang Akan Diterbitkan:</span>
+                    <div className="font-mono font-black text-sm text-brand-900 mt-0.5">
+                      {dataService.generateCustomerCode(executingReg.rw)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-bold text-slate-500">PIN Awal:</span>
+                    <div className="font-mono font-bold text-xs text-slate-700">1234</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-slate-500">PIN Awal:</span>
-                  <div className="font-mono font-bold text-xs text-slate-700">1234</div>
-                </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+              {/* Footer - Fixed */}
+              <div className="p-4 px-6 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setExecutingReg(null)}
-                  className="px-4 py-2.5 border border-slate-300 rounded-xl text-slate-700 font-semibold cursor-pointer"
+                  className="px-4 py-2 border border-slate-300 hover:bg-white rounded-xl text-slate-700 font-semibold transition cursor-pointer text-xs"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition shadow-sm flex items-center gap-1.5 cursor-pointer text-xs"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Setujui &amp; Terbitkan Akun</span>
@@ -1931,9 +1979,10 @@ export const CustomersView: React.FC = () => {
 
       {/* ================= EDIT CUSTOMER MODAL ================= */}
       {editingCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 overflow-hidden">
-            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-100 my-auto">
+            {/* Header - Fixed & Pinned */}
+            <div className="flex items-start justify-between p-5 sm:p-6 pb-3 border-b border-slate-100 shrink-0">
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
                   Edit Data Pelanggan
@@ -1948,171 +1997,175 @@ export const CustomersView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setEditingCustomer(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer transition"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer transition hover:bg-slate-100"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditCustomer} className="space-y-3.5 mt-4 text-xs">
-              <div>
-                <label className="block font-bold uppercase text-slate-500 mb-1">
-                  ID Pelanggan (Permanen)
-                </label>
-                <input
-                  type="text"
-                  value={editingCustomer.customerCode}
-                  disabled
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-600 font-bold select-all cursor-not-allowed"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  Nama Pelanggan <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Contoh: Budi Santoso"
-                  className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl font-medium"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  No. WhatsApp / Telepon
-                </label>
-                <input
-                  type="text"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                  placeholder="Contoh: 081234567890"
-                  className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl font-mono"
-                />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Digunakan untuk masuk (login warga), konfirmasi penerbitan akun, dan reminder tagihan via WhatsApp.
-                </p>
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  Alamat Domisili / Rumah <span className="text-rose-500">*</span>
-                </label>
-                <textarea
-                  rows={2}
-                  value={editAddress}
-                  onChange={(e) => setEditAddress(e.target.value)}
-                  placeholder="Contoh: Jl. Merpati No. 14, RT 01 / RW 03"
-                  className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl font-medium"
-                  required
-                />
-              </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
+            {/* Form with scrollable body and fixed footer */}
+            <form onSubmit={handleSaveEditCustomer} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-5 sm:p-6 pt-4 overflow-y-auto overscroll-contain space-y-3.5 text-xs flex-1">
+                <div>
+                  <label className="block font-bold uppercase text-slate-500 mb-1">
+                    ID Pelanggan (Permanen)
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={syncServiceAddress}
-                    onChange={(e) => setSyncServiceAddress(e.target.checked)}
-                    className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer"
+                    type="text"
+                    value={editingCustomer.customerCode}
+                    disabled
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-600 font-bold select-all cursor-not-allowed"
                   />
-                  <span className="font-semibold text-slate-700 text-xs">
-                    Perbarui juga alamat lokasi layanan utama jika warga pindah lokasi
-                  </span>
-                </label>
-                <p className="text-[10px] text-slate-400 ml-6">
-                  Jika dicentang, alamat pada objek layanan kebersihan pelanggan ini otomatis diselaraskan dengan alamat baru di atas.
-                </p>
-              </div>
-
-              {/* Pengaturan Kategori & Tarif Khusus (UMKM / Perusahaan) */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                    <DollarSign className="w-4 h-4 text-brand-600" />
-                    <span>Kategori &amp; Pengaturan Tarif Iuran</span>
-                  </div>
-                  <span className="text-[10px] text-brand-800 bg-brand-50 px-2 py-0.5 rounded-full font-bold border border-brand-200">
-                    Fleksibel UMKM / Usaha
-                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold uppercase text-[10px] text-slate-600 mb-1">
-                      Kategori Pelanggan
-                    </label>
-                    <select
-                      value={editCustCategoryId}
-                      onChange={(e) => setEditCustCategoryId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:border-brand-500"
-                    >
-                      {categories.map((c) => {
-                        const trf = tariffs.find(t => t.categoryId === c.id);
-                        return (
-                          <option key={c.id} value={c.id}>
-                            {c.name} {trf ? `(Standar: Rp ${trf.amount.toLocaleString('id-ID')})` : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Nama Pelanggan <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Contoh: Budi Santoso"
+                    className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl font-medium"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    No. WhatsApp / Telepon
+                  </label>
+                  <input
+                    type="text"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="Contoh: 081234567890"
+                    className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl font-mono"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Digunakan untuk masuk (login warga), konfirmasi penerbitan akun, dan reminder tagihan via WhatsApp.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Alamat Domisili / Rumah <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
+                    placeholder="Contoh: Jl. Merpati No. 14, RT 01 / RW 03"
+                    className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl font-medium"
+                    required
+                  />
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={syncServiceAddress}
+                      onChange={(e) => setSyncServiceAddress(e.target.checked)}
+                      className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer"
+                    />
+                    <span className="font-semibold text-slate-700 text-xs">
+                      Perbarui juga alamat lokasi layanan utama jika warga pindah lokasi
+                    </span>
+                  </label>
+                  <p className="text-[10px] text-slate-400 ml-6">
+                    Jika dicentang, alamat pada objek layanan kebersihan pelanggan ini otomatis diselaraskan dengan alamat baru di atas.
+                  </p>
+                </div>
+
+                {/* Pengaturan Kategori & Tarif Khusus (UMKM / Perusahaan) */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                      <DollarSign className="w-4 h-4 text-brand-600" />
+                      <span>Kategori &amp; Pengaturan Tarif Iuran</span>
+                    </div>
+                    <span className="text-[10px] text-brand-800 bg-brand-50 px-2 py-0.5 rounded-full font-bold border border-brand-200">
+                      Fleksibel UMKM / Usaha
+                    </span>
                   </div>
 
-                  <div>
-                    <label className="block font-bold uppercase text-[10px] text-slate-600 mb-1 flex items-center justify-between">
-                      <span>Tarif Khusus Pelanggan</span>
-                      <span className="text-[9px] text-brand-700 font-semibold lowercase">Opsional</span>
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1000"
-                        value={editCustCustomTariff}
-                        onChange={(e) => setEditCustCustomTariff(e.target.value)}
-                        placeholder={`Standar: ${(tariffs.find(t => t.categoryId === editCustCategoryId)?.amount || 0).toLocaleString('id-ID')}`}
-                        className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:border-brand-500"
-                      />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold uppercase text-[10px] text-slate-600 mb-1">
+                        Kategori Pelanggan
+                      </label>
+                      <select
+                        value={editCustCategoryId}
+                        onChange={(e) => setEditCustCategoryId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:border-brand-500"
+                      >
+                        {categories.map((c) => {
+                          const trf = tariffs.find(t => t.categoryId === c.id);
+                          return (
+                            <option key={c.id} value={c.id}>
+                              {c.name} {trf ? `(Standar: Rp ${trf.amount.toLocaleString('id-ID')})` : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold uppercase text-[10px] text-slate-600 mb-1 flex items-center justify-between">
+                        <span>Tarif Khusus Pelanggan</span>
+                        <span className="text-[9px] text-brand-700 font-semibold lowercase">Opsional</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1000"
+                          value={editCustCustomTariff}
+                          onChange={(e) => setEditCustCustomTariff(e.target.value)}
+                          placeholder={`Standar: ${(tariffs.find(t => t.categoryId === editCustCategoryId)?.amount || 0).toLocaleString('id-ID')}`}
+                          className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:border-brand-500"
+                        />
+                      </div>
                     </div>
                   </div>
+
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
+                    💡 <strong>Catatan:</strong> Cocok untuk pelanggan UMKM / Perusahaan karena nominal tagihan berbeda-beda tergantung skala usaha / volume sampah. Jika dikosongkan, tagihan akan otomatis mengikuti tarif standar kategori.
+                  </p>
                 </div>
 
-                <p className="text-[10px] text-slate-500 leading-relaxed">
-                  💡 <strong>Catatan:</strong> Cocok untuk pelanggan UMKM / Perusahaan karena nominal tagihan berbeda-beda tergantung skala usaha / volume sampah. Jika dikosongkan, tagihan akan otomatis mengikuti tarif standar kategori.
-                </p>
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Status Akun Pelanggan
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                  >
+                    <option value="ACTIVE">Aktif (Dapat mengakses layanan & menerima tagihan)</option>
+                    <option value="INACTIVE">Nonaktif (Layanan dihentikan sementara)</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  Status Akun Pelanggan
-                </label>
-                <select
-                  value={editStatus}
-                  onChange={(e) => setEditStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
-                >
-                  <option value="ACTIVE">Aktif (Dapat mengakses layanan & menerima tagihan)</option>
-                  <option value="INACTIVE">Nonaktif (Layanan dihentikan sementara)</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+              {/* Footer - Fixed & Always Visible */}
+              <div className="p-4 px-6 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditingCustomer(null)}
-                  className="px-4 py-2 border border-slate-300 hover:bg-slate-50 rounded-xl text-slate-700 font-semibold transition cursor-pointer"
+                  className="px-4 py-2 border border-slate-300 hover:bg-white rounded-xl text-slate-700 font-semibold transition cursor-pointer text-xs"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer text-xs flex items-center gap-1.5"
                 >
-                  Simpan Perubahan
+                  <span>Simpan Perubahan</span>
                 </button>
               </div>
             </form>
@@ -2122,9 +2175,10 @@ export const CustomersView: React.FC = () => {
 
       {/* ================= EDIT SERVICE LOCATION MODAL ================= */}
       {editingService && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 max-h-[92vh] overflow-y-auto">
-            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-100 my-auto">
+            {/* Header - Fixed */}
+            <div className="flex items-start justify-between p-5 sm:p-6 pb-3 border-b border-slate-100 shrink-0">
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                   Edit Lokasi Layanan
@@ -2139,183 +2193,187 @@ export const CustomersView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setEditingService(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer transition"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer transition hover:bg-slate-100"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditService} className="space-y-3.5 mt-4 text-xs">
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  Nama Objek Layanan <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editSrvName}
-                  onChange={(e) => setEditSrvName(e.target.value)}
-                  placeholder="Contoh: Rumah Tinggal / Toko Berkah"
-                  className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 rounded-xl font-medium"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  Alamat Objek Layanan <span className="text-rose-500">*</span>
-                </label>
-                <textarea
-                  rows={2}
-                  value={editSrvAddress}
-                  onChange={(e) => setEditSrvAddress(e.target.value)}
-                  placeholder="Contoh: Jl. Merpati No. 14"
-                  className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 rounded-xl font-medium"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+            {/* Form Body - Scrollable */}
+            <form onSubmit={handleSaveEditService} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-5 sm:p-6 pt-4 overflow-y-auto overscroll-contain space-y-3.5 text-xs flex-1">
                 <div>
-                  <label className="block font-bold uppercase text-slate-700 mb-1">Wilayah RW</label>
-                  <select
-                    value={editSrvRW}
-                    onChange={(e) => setEditSrvRW(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
-                  >
-                    {uniqueRWs.map(rw => <option key={rw} value={rw}>{rw}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-bold uppercase text-slate-700 mb-1">Wilayah RT</label>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Nama Objek Layanan <span className="text-rose-500">*</span>
+                  </label>
                   <input
                     type="text"
-                    value={editSrvRT}
-                    onChange={(e) => setEditSrvRT(e.target.value)}
-                    placeholder="Contoh: RT 01"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                    value={editSrvName}
+                    onChange={(e) => setEditSrvName(e.target.value)}
+                    placeholder="Contoh: Rumah Tinggal / Toko Berkah"
+                    className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 rounded-xl font-medium"
                     required
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold uppercase text-slate-700 mb-1">Kategori</label>
-                  <select
-                    value={editSrvCategoryId}
-                    onChange={(e) => {
-                      setEditSrvCategoryId(e.target.value);
-                      const matchingTrf = tariffs.find(t => t.categoryId === e.target.value);
-                      if (matchingTrf) setEditSrvTariffId(matchingTrf.id);
-                    }}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
-                  >
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-bold uppercase text-slate-700 mb-1">Tarif Retribusi</label>
-                  <select
-                    value={editSrvTariffId}
-                    onChange={(e) => setEditSrvTariffId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold text-brand-800"
-                  >
-                    {tariffs.filter(t => t.categoryId === editSrvCategoryId || t.id === editSrvTariffId).map(t => (
-                      <option key={t.id} value={t.id}>
-                        Rp {t.amount.toLocaleString('id-ID')}/bln
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Custom Tarif Fleksibel (Opsional) */}
-              <div>
-                <label className="block font-bold uppercase text-[11px] text-slate-700 mb-1 flex items-center justify-between">
-                  <span>Tarif Khusus / Custom Fleksibel (Opsional)</span>
-                  <span className="text-[10px] text-brand-700 font-semibold lowercase">Bisa custom per lokasi</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={editSrvCustomTariff}
-                    onChange={(e) => setEditSrvCustomTariff(e.target.value)}
-                    placeholder="Kosongkan jika mengikuti tarif standar kategori di atas"
-                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-900 focus:border-brand-500"
-                  />
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Jika diisi, nominal ini akan dipakai sebagai tagihan bulanan objek ini (mengabaikan tarif standar kategori).
-                </p>
-              </div>
-
-              {/* Tempel / Deteksi Titik Google Maps */}
-              <div className="bg-emerald-50/70 border border-emerald-200/90 rounded-2xl p-3.5 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block font-bold uppercase text-[10px] text-emerald-900 tracking-wider flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Titik / Link Google Maps (Auto Deteksi GPS)</span>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Alamat Objek Layanan <span className="text-rose-500">*</span>
                   </label>
-                  {editSrvDetectedCoord && (
-                    <span className="text-[10px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
-                      Terdeteksi!
-                    </span>
-                  )}
-                </div>
-
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={editSrvGmapsInput}
-                    onChange={(e) => handleEditSrvGmapsPaste(e.target.value)}
-                    placeholder="Paste link Google Maps atau koordinat (-7.3885, 112.7214)..."
-                    className="w-full pl-3 pr-8 py-2 bg-white border border-emerald-300 focus:border-emerald-500 rounded-xl text-xs placeholder:text-slate-400"
+                  <textarea
+                    rows={2}
+                    value={editSrvAddress}
+                    onChange={(e) => setEditSrvAddress(e.target.value)}
+                    placeholder="Contoh: Jl. Merpati No. 14"
+                    className="w-full px-3 py-2 border border-slate-300 focus:border-brand-500 rounded-xl font-medium"
+                    required
                   />
-                  {editSrvDetectedCoord && (
-                    <Check className="w-3.5 h-3.5 text-emerald-600 absolute right-2.5 top-1/2 -translate-y-1/2" />
-                  )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-1">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-600">Latitude</label>
-                    <input
-                      type="text"
-                      value={editSrvLat}
-                      onChange={(e) => setEditSrvLat(e.target.value)}
-                      placeholder="-7.3885"
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-mono text-[11px]"
-                    />
+                    <label className="block font-bold uppercase text-slate-700 mb-1">Wilayah RW</label>
+                    <select
+                      value={editSrvRW}
+                      onChange={(e) => setEditSrvRW(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                    >
+                      {uniqueRWs.map(rw => <option key={rw} value={rw}>{rw}</option>)}
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-600">Longitude</label>
+                    <label className="block font-bold uppercase text-slate-700 mb-1">Wilayah RT</label>
                     <input
                       type="text"
-                      value={editSrvLng}
-                      onChange={(e) => setEditSrvLng(e.target.value)}
-                      placeholder="112.7214"
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-mono text-[11px]"
+                      value={editSrvRT}
+                      onChange={(e) => setEditSrvRT(e.target.value)}
+                      placeholder="Contoh: RT 01"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                      required
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold uppercase text-slate-700 mb-1">Kategori</label>
+                    <select
+                      value={editSrvCategoryId}
+                      onChange={(e) => {
+                        setEditSrvCategoryId(e.target.value);
+                        const matchingTrf = tariffs.find(t => t.categoryId === e.target.value);
+                        if (matchingTrf) setEditSrvTariffId(matchingTrf.id);
+                      }}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                    >
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold uppercase text-slate-700 mb-1">Tarif Retribusi</label>
+                    <select
+                      value={editSrvTariffId}
+                      onChange={(e) => setEditSrvTariffId(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold text-brand-800"
+                    >
+                      {tariffs.filter(t => t.categoryId === editSrvCategoryId || t.id === editSrvTariffId).map(t => (
+                        <option key={t.id} value={t.id}>
+                          Rp {t.amount.toLocaleString('id-ID')}/bln
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Custom Tarif Fleksibel (Opsional) */}
+                <div>
+                  <label className="block font-bold uppercase text-[11px] text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Tarif Khusus / Custom Fleksibel (Opsional)</span>
+                    <span className="text-[10px] text-brand-700 font-semibold lowercase">Bisa custom per lokasi</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={editSrvCustomTariff}
+                      onChange={(e) => setEditSrvCustomTariff(e.target.value)}
+                      placeholder="Kosongkan jika mengikuti tarif standar kategori di atas"
+                      className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-900 focus:border-brand-500"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Jika diisi, nominal ini akan dipakai sebagai tagihan bulanan objek ini (mengabaikan tarif standar kategori).
+                  </p>
+                </div>
+
+                {/* Tempel / Deteksi Titik Google Maps */}
+                <div className="bg-emerald-50/70 border border-emerald-200/90 rounded-2xl p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block font-bold uppercase text-[10px] text-emerald-900 tracking-wider flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Titik / Link Google Maps (Auto Deteksi GPS)</span>
+                    </label>
+                    {editSrvDetectedCoord && (
+                      <span className="text-[10px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                        Terdeteksi!
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={editSrvGmapsInput}
+                      onChange={(e) => handleEditSrvGmapsPaste(e.target.value)}
+                      placeholder="Paste link Google Maps atau koordinat (-7.3885, 112.7214)..."
+                      className="w-full pl-3 pr-8 py-2 bg-white border border-emerald-300 focus:border-emerald-500 rounded-xl text-xs placeholder:text-slate-400"
+                    />
+                    {editSrvDetectedCoord && (
+                      <Check className="w-3.5 h-3.5 text-emerald-600 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-600">Latitude</label>
+                      <input
+                        type="text"
+                        value={editSrvLat}
+                        onChange={(e) => setEditSrvLat(e.target.value)}
+                        placeholder="-7.3885"
+                        className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-mono text-[11px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-600">Longitude</label>
+                      <input
+                        type="text"
+                        value={editSrvLng}
+                        onChange={(e) => setEditSrvLng(e.target.value)}
+                        placeholder="112.7214"
+                        className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-mono text-[11px]"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+              {/* Footer - Fixed */}
+              <div className="p-4 px-6 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditingService(null)}
-                  className="px-4 py-2 border border-slate-300 hover:bg-slate-50 rounded-xl text-slate-700 font-semibold transition cursor-pointer"
+                  className="px-4 py-2 border border-slate-300 hover:bg-white rounded-xl text-slate-700 font-semibold transition cursor-pointer text-xs"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer text-xs flex items-center gap-1.5"
                 >
-                  Simpan Lokasi Layanan
+                  <span>Simpan Lokasi Layanan</span>
                 </button>
               </div>
             </form>
@@ -2325,9 +2383,10 @@ export const CustomersView: React.FC = () => {
 
       {/* ================= MANUAL BILL MODAL (PAST / FUTURE BILL) ================= */}
       {manualBillModalOpen && selectedCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 overflow-hidden">
-            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-100 my-auto">
+            {/* Header - Fixed */}
+            <div className="flex items-start justify-between p-5 sm:p-6 pb-3 border-b border-slate-100 shrink-0">
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                   Tagihan Fleksibel
@@ -2342,149 +2401,153 @@ export const CustomersView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setManualBillModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer transition"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer transition hover:bg-slate-100"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateManualBillSubmit} className="space-y-3.5 mt-4 text-xs">
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  Objek Layanan Kebersihan <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={manualBillServiceId}
-                  onChange={(e) => {
-                    setManualBillServiceId(e.target.value);
-                    const srv = allServices.find(s => s.id === e.target.value);
-                    if (srv) {
-                      setManualBillAmount((srv.tariffAmount || 20000).toString());
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
-                  required
-                >
-                  {allServices.filter(s => s.customerId === selectedCustomer.id).map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.categoryName}) — Rp {(s.tariffAmount || 0).toLocaleString('id-ID')}/bln
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+            {/* Form Body - Scrollable */}
+            <form onSubmit={handleCreateManualBillSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-5 sm:p-6 pt-4 overflow-y-auto overscroll-contain space-y-3.5 text-xs flex-1">
                 <div>
                   <label className="block font-bold uppercase text-slate-700 mb-1">
-                    Bulan Tagihan <span className="text-rose-500">*</span>
+                    Objek Layanan Kebersihan <span className="text-rose-500">*</span>
                   </label>
                   <select
-                    value={manualBillMonth}
-                    onChange={(e) => setManualBillMonth(Number(e.target.value))}
+                    value={manualBillServiceId}
+                    onChange={(e) => {
+                      setManualBillServiceId(e.target.value);
+                      const srv = allServices.find(s => s.id === e.target.value);
+                      if (srv) {
+                        setManualBillAmount((srv.tariffAmount || 20000).toString());
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                    required
                   >
-                    {[
-                      { m: 1, name: 'Januari' },
-                      { m: 2, name: 'Februari' },
-                      { m: 3, name: 'Maret' },
-                      { m: 4, name: 'April' },
-                      { m: 5, name: 'Mei' },
-                      { m: 6, name: 'Juni' },
-                      { m: 7, name: 'Juli' },
-                      { m: 8, name: 'Agustus' },
-                      { m: 9, name: 'September' },
-                      { m: 10, name: 'Oktober' },
-                      { m: 11, name: 'November' },
-                      { m: 12, name: 'Desember' }
-                    ].map(item => (
-                      <option key={item.m} value={item.m}>{item.name}</option>
+                    {allServices.filter(s => s.customerId === selectedCustomer.id).map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.categoryName}) — Rp {(s.tariffAmount || 0).toLocaleString('id-ID')}/bln
+                      </option>
                     ))}
                   </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold uppercase text-slate-700 mb-1">
+                      Bulan Tagihan <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={manualBillMonth}
+                      onChange={(e) => setManualBillMonth(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                    >
+                      {[
+                        { m: 1, name: 'Januari' },
+                        { m: 2, name: 'Februari' },
+                        { m: 3, name: 'Maret' },
+                        { m: 4, name: 'April' },
+                        { m: 5, name: 'Mei' },
+                        { m: 6, name: 'Juni' },
+                        { m: 7, name: 'Juli' },
+                        { m: 8, name: 'Agustus' },
+                        { m: 9, name: 'September' },
+                        { m: 10, name: 'Oktober' },
+                        { m: 11, name: 'November' },
+                        { m: 12, name: 'Desember' }
+                      ].map(item => (
+                        <option key={item.m} value={item.m}>{item.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold uppercase text-slate-700 mb-1">
+                      Tahun Tagihan <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={manualBillYear}
+                      onChange={(e) => setManualBillYear(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium font-mono"
+                    >
+                      {[
+                        new Date().getFullYear() - 2,
+                        new Date().getFullYear() - 1,
+                        new Date().getFullYear(),
+                        new Date().getFullYear() + 1
+                      ].map(yr => (
+                        <option key={yr} value={yr}>{yr}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block font-bold uppercase text-slate-700 mb-1">
-                    Tahun Tagihan <span className="text-rose-500">*</span>
+                    Nominal Tagihan (Rp) <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                    <input
+                      type="number"
+                      min="1000"
+                      step="1000"
+                      value={manualBillAmount}
+                      onChange={(e) => setManualBillAmount(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl font-bold text-brand-800"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Status Tagihan Ini <span className="text-rose-500">*</span>
                   </label>
                   <select
-                    value={manualBillYear}
-                    onChange={(e) => setManualBillYear(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium font-mono"
+                    value={manualBillStatus}
+                    onChange={(e) => setManualBillStatus(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-800"
                   >
-                    {[
-                      new Date().getFullYear() - 2,
-                      new Date().getFullYear() - 1,
-                      new Date().getFullYear(),
-                      new Date().getFullYear() + 1
-                    ].map(yr => (
-                      <option key={yr} value={yr}>{yr}</option>
-                    ))}
+                    <option value="OVERDUE">MENUNGGAK (Tunggakan Masa Lampau Belum Dibayar)</option>
+                    <option value="PAID">LUNAS (Sudah Dibayar Warga / Rekonsiliasi Kas Lampau)</option>
+                    <option value="UNPAID">BELUM BAYAR (Tagihan Normal Berjalan)</option>
                   </select>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    {manualBillStatus === 'OVERDUE' && 'Akan masuk sebagai tunggakan resmi dan tercatat di reminder WhatsApp.'}
+                    {manualBillStatus === 'PAID' && 'Sistem akan otomatis menerbitkan kuitansi resmi bertanda lunas.'}
+                    {manualBillStatus === 'UNPAID' && 'Akan tampil sebagai tagihan aktif belum jatuh tempo.'}
+                  </p>
                 </div>
-              </div>
 
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  Nominal Tagihan (Rp) <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Catatan / Keterangan (Opsional)
+                  </label>
                   <input
-                    type="number"
-                    min="1000"
-                    step="1000"
-                    value={manualBillAmount}
-                    onChange={(e) => setManualBillAmount(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl font-bold text-brand-800"
-                    required
+                    type="text"
+                    value={manualBillNotes}
+                    onChange={(e) => setManualBillNotes(e.target.value)}
+                    placeholder="Misal: Penyesuaian iuran sebelum aplikasi RESIK digunakan"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  Status Tagihan Ini <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={manualBillStatus}
-                  onChange={(e) => setManualBillStatus(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-800"
-                >
-                  <option value="OVERDUE">MENUNGGAK (Tunggakan Masa Lampau Belum Dibayar)</option>
-                  <option value="PAID">LUNAS (Sudah Dibayar Warga / Rekonsiliasi Kas Lampau)</option>
-                  <option value="UNPAID">BELUM BAYAR (Tagihan Normal Berjalan)</option>
-                </select>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  {manualBillStatus === 'OVERDUE' && 'Akan masuk sebagai tunggakan resmi dan tercatat di reminder WhatsApp.'}
-                  {manualBillStatus === 'PAID' && 'Sistem akan otomatis menerbitkan kuitansi resmi bertanda lunas.'}
-                  {manualBillStatus === 'UNPAID' && 'Akan tampil sebagai tagihan aktif belum jatuh tempo.'}
-                </p>
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-slate-700 mb-1">
-                  Catatan / Keterangan (Opsional)
-                </label>
-                <input
-                  type="text"
-                  value={manualBillNotes}
-                  onChange={(e) => setManualBillNotes(e.target.value)}
-                  placeholder="Misal: Penyesuaian iuran sebelum aplikasi RESIK digunakan"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+              {/* Footer - Fixed */}
+              <div className="p-4 px-6 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setManualBillModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 hover:bg-slate-50 rounded-xl text-slate-700 font-semibold transition cursor-pointer"
+                  className="px-4 py-2 border border-slate-300 hover:bg-white rounded-xl text-slate-700 font-semibold transition cursor-pointer text-xs"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer text-xs"
                 >
                   Terbitkan Tagihan
                 </button>
