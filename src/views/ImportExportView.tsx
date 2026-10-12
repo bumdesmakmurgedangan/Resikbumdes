@@ -107,14 +107,25 @@ export const ImportExportView: React.FC = () => {
             </button>
           </div>
 
-          {/* Info Box: Dukungan Google Maps */}
-          <div className="p-3 bg-brand-50/70 border border-brand-200/80 rounded-2xl flex items-start gap-2.5 text-xs text-brand-950">
-            <span className="text-base leading-none mt-0.5">📍</span>
-            <div>
-              <div className="font-bold text-brand-900">Mendukung Titik / Link Google Maps</div>
-              <p className="text-[11px] text-brand-800/90 mt-0.5 leading-relaxed">
-                Template menyediakan kolom <strong>Titik Lokasi Google Maps</strong>. Cukup paste link Google Maps atau angka koordinat (contoh: <code className="font-mono bg-white/80 px-1 py-0.5 rounded text-[10px]">-7.3885, 112.7214</code>), sistem akan otomatis mengekstrak Latitude &amp; Longitude.
-              </p>
+          {/* Info Box: Fitur Unggulan Import */}
+          <div className="p-3 bg-brand-50/70 border border-brand-200/80 rounded-2xl space-y-2 text-xs text-brand-950">
+            <div className="flex items-start gap-2.5">
+              <span className="text-base leading-none mt-0.5">📍</span>
+              <div>
+                <div className="font-bold text-brand-900">Mendukung Titik / Link Google Maps</div>
+                <p className="text-[11px] text-brand-800/90 mt-0.5 leading-relaxed">
+                  Cukup paste link Google Maps atau angka koordinat (contoh: <code className="font-mono bg-white/80 px-1 py-0.5 rounded text-[10px]">-7.3885, 112.7214</code>), sistem akan otomatis mengekstrak Latitude &amp; Longitude.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5 pt-1 border-t border-brand-200/60">
+              <span className="text-base leading-none mt-0.5">⚡</span>
+              <div>
+                <div className="font-bold text-brand-900">Tarif Fleksibel &amp; Rekonsiliasi Status Pembayaran</div>
+                <p className="text-[11px] text-brand-800/90 mt-0.5 leading-relaxed">
+                  Tersedia kolom <strong>Tarif Bulanan</strong> (bisa custom nominal per UMKM/perusahaan), <strong>Status Bayar Bulan Ini</strong> (isi <code className="font-mono bg-white/80 px-1 py-0.5 rounded text-[10px]">LUNAS</code> untuk langsung tercatat lunas dengan kuitansi resmi), dan <strong>Jumlah Bulan Tunggakan Lampau</strong> (misal diisi <code className="font-mono bg-white/80 px-1 py-0.5 rounded text-[10px]">2</code> untuk otomatis mencatat tunggakan 2 bulan ke belakang).
+                </p>
+              </div>
             </div>
           </div>
 
@@ -198,23 +209,53 @@ export const ImportExportView: React.FC = () => {
                     <th className="py-2 px-3">Kategori</th>
                     <th className="py-2 px-3">Titik / GPS</th>
                     <th className="py-2 px-3">Tarif</th>
+                    <th className="py-2 px-3">Status Bulan Ini</th>
+                    <th className="py-2 px-3">Tunggakan Lampau</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {parsedRows.slice(0, 10).map((row, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
-                      <td className="py-2 px-3 text-slate-400">{i + 1}</td>
-                      <td className="py-2 px-3 font-semibold text-slate-800">{row['Nama Pelanggan'] || row['namaPelanggan'] || '-'}</td>
-                      <td className="py-2 px-3 font-mono">{row['No HP'] || row['noHp'] || '-'}</td>
-                      <td className="py-2 px-3">{row['Alamat'] || row['alamat'] || '-'}</td>
-                      <td className="py-2 px-3">{row['RW'] || row['rw']} / {row['RT'] || row['rt']}</td>
-                      <td className="py-2 px-3">{row['Kategori'] || row['kategori'] || 'Rumah Tangga'}</td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-slate-500 max-w-[140px] truncate" title={String(row['Titik Lokasi Google Maps'] || row['Link Google Maps'] || row['Latitude'] || '-')}>
-                        {row['Titik Lokasi Google Maps'] || row['Link Google Maps'] || (row['Latitude'] ? `${row['Latitude']}, ${row['Longitude'] || ''}` : '-')}
-                      </td>
-                      <td className="py-2 px-3 font-bold text-brand-800">Rp {Number(row['Tarif'] || row['tarif'] || 20000).toLocaleString('id-ID')}</td>
-                    </tr>
-                  ))}
+                  {parsedRows.slice(0, 10).map((row, i) => {
+                    const rawStatus = String(row['Status Bayar Bulan Ini'] || row['Status Bayar'] || row['Status Pembayaran'] || '').toUpperCase();
+                    const isPaid = rawStatus === 'LUNAS' || rawStatus === 'PAID' || rawStatus === 'SUDAH' || rawStatus === 'SUDAH BAYAR';
+                    const rawTunggakan = row['Jumlah Bulan Tunggakan Lampau'] || row['Tunggakan Lampau'] || row['Tunggakan'] || 0;
+                    const tunggakanMonths = !isNaN(Number(rawTunggakan)) ? Number(rawTunggakan) : 0;
+                    const tariffVal = Number(row['Tarif Bulanan'] || row['Tarif'] || row['tarif'] || 20000);
+
+                    return (
+                      <tr key={i} className="hover:bg-slate-50">
+                        <td className="py-2 px-3 text-slate-400">{i + 1}</td>
+                        <td className="py-2 px-3 font-semibold text-slate-800">{row['Nama Pelanggan'] || row['namaPelanggan'] || '-'}</td>
+                        <td className="py-2 px-3 font-mono">{row['No HP'] || row['noHp'] || '-'}</td>
+                        <td className="py-2 px-3">{row['Alamat'] || row['alamat'] || '-'}</td>
+                        <td className="py-2 px-3">{row['RW'] || row['rw']} / {row['RT'] || row['rt']}</td>
+                        <td className="py-2 px-3">{row['Kategori'] || row['kategori'] || 'Rumah Tangga'}</td>
+                        <td className="py-2 px-3 font-mono text-[11px] text-slate-500 max-w-[140px] truncate" title={String(row['Titik Lokasi Google Maps'] || row['Link Google Maps'] || row['Latitude'] || '-')}>
+                          {row['Titik Lokasi Google Maps'] || row['Link Google Maps'] || (row['Latitude'] ? `${row['Latitude']}, ${row['Longitude'] || ''}` : '-')}
+                        </td>
+                        <td className="py-2 px-3 font-bold text-brand-800">Rp {tariffVal.toLocaleString('id-ID')}</td>
+                        <td className="py-2 px-3">
+                          {isPaid ? (
+                            <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full text-[10px]">
+                              LUNAS
+                            </span>
+                          ) : (
+                            <span className="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full text-[10px]">
+                              BELUM BAYAR
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 font-mono text-center">
+                          {tunggakanMonths > 0 ? (
+                            <span className="bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-full text-[10px]">
+                              {tunggakanMonths} Bln
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-[11px]">0</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               {parsedRows.length > 10 && (

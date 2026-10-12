@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { dataService } from '../services/dataService';
-import { Customer, ServiceLocation, Category, Tariff, Region, CustomerRegistration } from '../types';
+import { Customer, ServiceLocation, Category, Tariff, Region, CustomerRegistration, Bill, Receipt } from '../types';
 import {
   Users, UserPlus, Search, Edit3, Key, Plus,
   Home, Store, Building, MapPin, CheckCircle2, XCircle,
   Eye, RefreshCw, AlertCircle, Navigation, ExternalLink, Check,
-  Phone, Clock, MessageSquare, ThumbsUp, ThumbsDown, CheckSquare, Sparkles, Send, X
+  Phone, Clock, MessageSquare, ThumbsUp, ThumbsDown, CheckSquare, Sparkles, Send, X,
+  FileText, Calendar, DollarSign
 } from 'lucide-react';
 import { parseGoogleMapsLocation } from '../utils/geoUtils';
+import { ReceiptModal } from '../components/common/ReceiptModal';
 
 export const CustomersView: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
@@ -35,6 +37,7 @@ export const CustomersView: React.FC = () => {
   const [executingReg, setExecutingReg] = useState<CustomerRegistration | null>(null);
   const [execObjectName, setExecObjectName] = useState('Rumah Tinggal');
   const [execCategoryId, setExecCategoryId] = useState(categories[0]?.id || '');
+  const [execCustomTariff, setExecCustomTariff] = useState<string>('');
   const [executingSuccess, setExecutingSuccess] = useState<{
     customer: Customer;
     registration: CustomerRegistration;
@@ -63,6 +66,7 @@ export const CustomersView: React.FC = () => {
   const [newRT, setNewRT] = useState('RT 01');
   const [newObjectName, setNewObjectName] = useState('Rumah Tinggal');
   const [newCategoryId, setNewCategoryId] = useState(categories[0]?.id || '');
+  const [newCustomTariff, setNewCustomTariff] = useState('');
   const [newLat, setNewLat] = useState<string>('');
   const [newLng, setNewLng] = useState<string>('');
   const [gmapsInput, setGmapsInput] = useState('');
@@ -75,6 +79,7 @@ export const CustomersView: React.FC = () => {
   const [srvRW, setSrvRW] = useState('RW 01');
   const [srvRT, setSrvRT] = useState('RT 01');
   const [srvCategoryId, setSrvCategoryId] = useState(categories[0]?.id || '');
+  const [srvCustomTariff, setSrvCustomTariff] = useState('');
   const [srvLat, setSrvLat] = useState<string>('');
   const [srvLng, setSrvLng] = useState<string>('');
   const [srvGmapsInput, setSrvGmapsInput] = useState('');
@@ -136,10 +141,21 @@ export const CustomersView: React.FC = () => {
   const [editSrvRT, setEditSrvRT] = useState('RT 01');
   const [editSrvCategoryId, setEditSrvCategoryId] = useState('');
   const [editSrvTariffId, setEditSrvTariffId] = useState('');
+  const [editSrvCustomTariff, setEditSrvCustomTariff] = useState('');
   const [editSrvLat, setEditSrvLat] = useState('');
   const [editSrvLng, setEditSrvLng] = useState('');
   const [editSrvGmapsInput, setEditSrvGmapsInput] = useState('');
   const [editSrvDetectedCoord, setEditSrvDetectedCoord] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  // Manual Past/Future Bill Modal States
+  const [manualBillModalOpen, setManualBillModalOpen] = useState(false);
+  const [manualBillServiceId, setManualBillServiceId] = useState('');
+  const [manualBillYear, setManualBillYear] = useState(new Date().getFullYear());
+  const [manualBillMonth, setManualBillMonth] = useState(new Date().getMonth() + 1);
+  const [manualBillAmount, setManualBillAmount] = useState('');
+  const [manualBillStatus, setManualBillStatus] = useState<'OVERDUE' | 'UNPAID' | 'PAID'>('OVERDUE');
+  const [manualBillNotes, setManualBillNotes] = useState('');
+  const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
 
   const filteredCustomers = customers.filter(c => {
     if (search.trim()) {
@@ -182,6 +198,7 @@ export const CustomersView: React.FC = () => {
 
       // Create initial service location
       const selectedTariff = tariffs.find(t => t.categoryId === newCategoryId) || tariffs[0];
+      const customAmount = newCustomTariff ? parseFloat(newCustomTariff) : undefined;
       dataService.saveServiceLocation({
         customerId: cust.id,
         name: newObjectName.trim() || 'Rumah Tinggal',
@@ -190,6 +207,7 @@ export const CustomersView: React.FC = () => {
         rw: newRW,
         categoryId: newCategoryId,
         tariffId: selectedTariff?.id || 'trf-1',
+        customTariffAmount: (customAmount && customAmount > 0) ? customAmount : null,
         latitude: newLat ? parseFloat(newLat) : null,
         longitude: newLng ? parseFloat(newLng) : null,
         status: 'ACTIVE'
@@ -201,6 +219,7 @@ export const CustomersView: React.FC = () => {
       setNewName('');
       setNewPhone('');
       setNewAddress('');
+      setNewCustomTariff('');
       setNewLat('');
       setNewLng('');
       setGmapsInput('');
@@ -221,6 +240,7 @@ export const CustomersView: React.FC = () => {
 
     try {
       const selectedTariff = tariffs.find(t => t.categoryId === srvCategoryId) || tariffs[0];
+      const customAmount = srvCustomTariff ? parseFloat(srvCustomTariff) : undefined;
       dataService.saveServiceLocation({
         customerId: selectedCustomer.id,
         name: srvObjectName.trim(),
@@ -229,6 +249,7 @@ export const CustomersView: React.FC = () => {
         rw: srvRW,
         categoryId: srvCategoryId,
         tariffId: selectedTariff?.id || 'trf-1',
+        customTariffAmount: (customAmount && customAmount > 0) ? customAmount : null,
         latitude: srvLat ? parseFloat(srvLat) : null,
         longitude: srvLng ? parseFloat(srvLng) : null,
         status: 'ACTIVE'
@@ -238,6 +259,7 @@ export const CustomersView: React.FC = () => {
       setAddServiceModalOpen(false);
       setSrvObjectName('');
       setSrvAddress('');
+      setSrvCustomTariff('');
       setSrvLat('');
       setSrvLng('');
       setSrvGmapsInput('');
@@ -331,6 +353,7 @@ export const CustomersView: React.FC = () => {
     setEditSrvRT(srv.rt);
     setEditSrvCategoryId(srv.categoryId);
     setEditSrvTariffId(srv.tariffId);
+    setEditSrvCustomTariff(srv.customTariffAmount ? srv.customTariffAmount.toString() : '');
     setEditSrvLat(srv.latitude ? srv.latitude.toString() : '');
     setEditSrvLng(srv.longitude ? srv.longitude.toString() : '');
     setEditSrvGmapsInput(srv.latitude && srv.longitude ? `${srv.latitude}, ${srv.longitude}` : '');
@@ -365,6 +388,7 @@ export const CustomersView: React.FC = () => {
     try {
       const selectedCat = categories.find(c => c.id === editSrvCategoryId) || categories[0];
       const selectedTrf = tariffs.find(t => t.id === editSrvTariffId) || tariffs.find(t => t.categoryId === selectedCat?.id) || tariffs[0];
+      const customAmount = editSrvCustomTariff ? parseFloat(editSrvCustomTariff) : null;
 
       dataService.saveServiceLocation({
         id: editingService.id,
@@ -374,6 +398,7 @@ export const CustomersView: React.FC = () => {
         rw: editSrvRW,
         categoryId: selectedCat?.id,
         tariffId: selectedTrf?.id,
+        customTariffAmount: (customAmount && customAmount > 0) ? customAmount : null,
         latitude: editSrvLat ? parseFloat(editSrvLat) : null,
         longitude: editSrvLng ? parseFloat(editSrvLng) : null
       }, currentUser);
@@ -392,12 +417,14 @@ export const CustomersView: React.FC = () => {
     try {
       const selectedCategory = categories.find(c => c.id === execCategoryId) || categories[0];
       const selectedTariff = tariffs.find(t => t.categoryId === selectedCategory?.id) || tariffs[0];
+      const customAmount = execCustomTariff ? parseFloat(execCustomTariff) : undefined;
 
       const res = dataService.approveCustomerRegistration(
         executingReg.id,
         {
           categoryId: selectedCategory?.id,
           tariffId: selectedTariff?.id,
+          customTariffAmount: (customAmount && customAmount > 0) ? customAmount : null,
           objectName: execObjectName || 'Rumah Tinggal'
         },
         currentUser
@@ -409,9 +436,62 @@ export const CustomersView: React.FC = () => {
         categoryName: selectedCategory?.name || 'Rumah Tangga'
       });
       setExecutingReg(null);
+      setExecCustomTariff('');
       setRefreshKey(prev => prev + 1);
     } catch (err: any) {
       alert(err.message || 'Gagal mengeksekusi pendaftaran');
+    }
+  };
+
+  // Open Manual Past/Future Bill Dialog
+  const handleOpenManualBill = (srvId?: string) => {
+    if (!selectedCustomer) return;
+    const custServices = allServices.filter(s => s.customerId === selectedCustomer.id);
+    const targetSrv = srvId ? custServices.find(s => s.id === srvId) : custServices[0];
+    setManualBillServiceId(targetSrv?.id || custServices[0]?.id || '');
+    setManualBillYear(new Date().getFullYear());
+    setManualBillMonth(new Date().getMonth() + 1);
+    const defaultAmount = targetSrv ? (targetSrv.tariffAmount || 20000) : 20000;
+    setManualBillAmount(defaultAmount.toString());
+    setManualBillStatus('OVERDUE');
+    setManualBillNotes('');
+    setManualBillModalOpen(true);
+  };
+
+  // Submit Manual Past/Future Bill
+  const handleCreateManualBillSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualBillServiceId) {
+      alert('Pilih lokasi layanan objek terlebih dahulu.');
+      return;
+    }
+    const amount = parseFloat(manualBillAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert('Nominal tagihan harus berupa angka positif.');
+      return;
+    }
+
+    try {
+      const res = dataService.createManualBill({
+        serviceId: manualBillServiceId,
+        billingYear: Number(manualBillYear),
+        billingMonth: Number(manualBillMonth),
+        amount,
+        status: manualBillStatus,
+        notes: manualBillNotes.trim() || undefined
+      }, currentUser);
+
+      alert(`Tagihan periode ${dataService.formatMonthName(res.bill.billingMonth, res.bill.billingYear)} berhasil diterbitkan dengan status ${res.bill.status}!`);
+      setManualBillModalOpen(false);
+      setRefreshKey(prev => prev + 1);
+
+      if (res.receipt) {
+        if (window.confirm('Kuitansi pembayaran resmi telah otomatis diterbitkan (status Lunas). Ingin melihat/mencetak kuitansi sekarang?')) {
+          setViewingReceipt(res.receipt);
+        }
+      }
+    } catch (err: any) {
+      alert(err.message || 'Gagal menerbitkan tagihan');
     }
   };
 
@@ -1014,6 +1094,29 @@ export const CustomersView: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Custom Tarif Fleksibel (Opsional) */}
+                <div>
+                  <label className="block font-bold uppercase text-[11px] text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Tarif Khusus / Custom (Opsional)</span>
+                    <span className="text-[10px] text-brand-700 font-semibold lowercase">Bisa custom per pelanggan</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={newCustomTariff}
+                      onChange={(e) => setNewCustomTariff(e.target.value)}
+                      placeholder={`Standar kategori: ${(tariffs.find(t => t.categoryId === newCategoryId)?.amount || 0).toLocaleString('id-ID')}`}
+                      className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-900"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    *Kosongkan jika menggunakan tarif standar kategori. Sangat cocok diisi nominal khusus untuk UMKM / Usaha / Perusahaan.
+                  </p>
+                </div>
+
                 {/* Opsi Cepat: Tempel Titik / Link dari Google Maps */}
                 <div className="bg-emerald-50/70 border border-emerald-200/90 rounded-2xl p-3.5 space-y-2">
                   <div className="flex items-center justify-between">
@@ -1157,8 +1260,13 @@ export const CustomersView: React.FC = () => {
                       <div className="text-[11px] text-slate-500 mt-0.5">
                         {srv.address} ({srv.rt} / {srv.rw}) • Kategori: <strong>{srv.categoryName}</strong>
                       </div>
-                      <div className="text-[11px] font-bold text-brand-700 mt-0.5">
-                        Tarif: Rp {srv.tariffAmount?.toLocaleString('id-ID')}/bln
+                      <div className="text-[11px] font-bold text-brand-700 mt-0.5 flex items-center gap-1.5">
+                        <span>Tarif: Rp {srv.tariffAmount?.toLocaleString('id-ID')}/bln</span>
+                        {srv.customTariffAmount && srv.customTariffAmount > 0 ? (
+                          <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-200">
+                            Tarif Khusus
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -1188,6 +1296,101 @@ export const CustomersView: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Riwayat Tagihan & Tunggakan Iuran */}
+            <div className="space-y-3 mt-5 pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-xs uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-brand-600" />
+                    <span>Daftar Riwayat Tagihan &amp; Tunggakan</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Status tagihan per bulan, tunggakan masa lampau, dan bukti kuitansi resmi.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenManualBill()}
+                  className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-emerald-200 cursor-pointer shadow-2xs"
+                >
+                  <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>+ Terbitkan Tagihan Bulan Lain</span>
+                </button>
+              </div>
+
+              {/* Bills List for this customer */}
+              {(() => {
+                const custServices = allServices.filter(s => s.customerId === selectedCustomer.id);
+                const srvIds = custServices.map(s => s.id);
+                const customerBills = dataService.getBills()
+                  .filter(b => srvIds.includes(b.serviceId))
+                  .sort((a, b) => (b.billingYear * 100 + b.billingMonth) - (a.billingYear * 100 + a.billingMonth));
+
+                if (customerBills.length === 0) {
+                  return (
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center text-slate-400 text-xs">
+                      Belum ada catatan tagihan untuk pelanggan ini. Anda dapat menerbitkan tagihan bulan lampau atau bulan berjalan secara manual di atas.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {customerBills.map(bill => {
+                      const srv = custServices.find(s => s.id === bill.serviceId);
+                      const receipt = dataService.getReceiptByBillId(bill.id);
+                      return (
+                        <div key={bill.id} className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-2xs hover:border-slate-300 transition">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-xs text-slate-900">
+                                {dataService.formatMonthName(bill.billingMonth, bill.billingYear)}
+                              </span>
+                              {bill.status === 'PAID' && (
+                                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-emerald-200">
+                                  <Check className="w-2.5 h-2.5" />
+                                  <span>LUNAS</span>
+                                </span>
+                              )}
+                              {bill.status === 'OVERDUE' && (
+                                <span className="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-rose-200">
+                                  <AlertCircle className="w-2.5 h-2.5" />
+                                  <span>MENUNGGAK</span>
+                                </span>
+                              )}
+                              {bill.status === 'UNPAID' && (
+                                <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-amber-200">
+                                  <Clock className="w-2.5 h-2.5" />
+                                  <span>BELUM BAYAR</span>
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              {srv?.name || 'Layanan'} • Rp {bill.amount.toLocaleString('id-ID')}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {bill.status === 'PAID' && receipt && (
+                              <button
+                                type="button"
+                                onClick={() => setViewingReceipt(receipt)}
+                                className="px-2.5 py-1 bg-brand-50 hover:bg-brand-100 text-brand-800 rounded-lg text-[11px] font-bold border border-brand-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                                title="Lihat / Cetak Struk Kuitansi Pembayaran"
+                              >
+                                <FileText className="w-3 h-3 text-brand-600" />
+                                <span>Lihat Kuitansi</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-200 flex justify-end gap-2">
@@ -1291,6 +1494,29 @@ export const CustomersView: React.FC = () => {
                     );
                   })}
                 </select>
+              </div>
+
+              {/* Custom Tarif Fleksibel (Opsional) */}
+              <div>
+                <label className="block font-bold uppercase text-[11px] text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Tarif Khusus Objek Ini (Opsional)</span>
+                  <span className="text-[10px] text-brand-700 font-semibold lowercase">Bisa custom per lokasi</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={srvCustomTariff}
+                    onChange={(e) => setSrvCustomTariff(e.target.value)}
+                    placeholder={`Standar kategori: ${(tariffs.find(t => t.categoryId === srvCategoryId)?.amount || 0).toLocaleString('id-ID')}`}
+                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-900"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  *Kosongkan jika menggunakan tarif standar kategori.
+                </p>
               </div>
 
               {/* Opsi Cepat: Tempel Titik / Link dari Google Maps */}
@@ -1493,6 +1719,29 @@ export const CustomersView: React.FC = () => {
                 </select>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Tarif iuran bulanan akan otomatis terhubung ke kategori yang dipilih.
+                </p>
+              </div>
+
+              {/* Custom Tarif Fleksibel (Opsional) */}
+              <div>
+                <label className="block font-bold uppercase text-[11px] text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Tarif Khusus / Custom Fleksibel (Opsional)</span>
+                  <span className="text-[10px] text-brand-700 font-semibold lowercase">Bisa custom per pelanggan</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={execCustomTariff}
+                    onChange={(e) => setExecCustomTariff(e.target.value)}
+                    placeholder={`Standar kategori: ${(tariffs.find(t => t.categoryId === execCategoryId)?.amount || 0).toLocaleString('id-ID')}`}
+                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-900"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Kosongkan jika menggunakan tarif standar kategori. Sangat bermanfaat bila usaha/toko ini bersepakat dengan tarif khusus.
                 </p>
               </div>
 
@@ -1892,6 +2141,29 @@ export const CustomersView: React.FC = () => {
                 </div>
               </div>
 
+              {/* Custom Tarif Fleksibel (Opsional) */}
+              <div>
+                <label className="block font-bold uppercase text-[11px] text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Tarif Khusus / Custom Fleksibel (Opsional)</span>
+                  <span className="text-[10px] text-brand-700 font-semibold lowercase">Bisa custom per lokasi</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={editSrvCustomTariff}
+                    onChange={(e) => setEditSrvCustomTariff(e.target.value)}
+                    placeholder="Kosongkan jika mengikuti tarif standar kategori di atas"
+                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-900 focus:border-brand-500"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Jika diisi, nominal ini akan dipakai sebagai tagihan bulanan objek ini (mengabaikan tarif standar kategori).
+                </p>
+              </div>
+
               {/* Tempel / Deteksi Titik Google Maps */}
               <div className="bg-emerald-50/70 border border-emerald-200/90 rounded-2xl p-3.5 space-y-2">
                 <div className="flex items-center justify-between">
@@ -1961,6 +2233,185 @@ export const CustomersView: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* ================= MANUAL BILL MODAL (PAST / FUTURE BILL) ================= */}
+      {manualBillModalOpen && selectedCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 overflow-hidden">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                  Tagihan Fleksibel
+                </span>
+                <h3 className="font-extrabold text-base text-slate-900 mt-1">
+                  Terbitkan Tagihan Bulan Tertentu
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Untuk pelanggan <strong>{selectedCustomer.name}</strong> ({selectedCustomer.customerCode}).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setManualBillModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateManualBillSubmit} className="space-y-3.5 mt-4 text-xs">
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Objek Layanan Kebersihan <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={manualBillServiceId}
+                  onChange={(e) => {
+                    setManualBillServiceId(e.target.value);
+                    const srv = allServices.find(s => s.id === e.target.value);
+                    if (srv) {
+                      setManualBillAmount((srv.tariffAmount || 20000).toString());
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                  required
+                >
+                  {allServices.filter(s => s.customerId === selectedCustomer.id).map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.categoryName}) — Rp {(s.tariffAmount || 0).toLocaleString('id-ID')}/bln
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Bulan Tagihan <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={manualBillMonth}
+                    onChange={(e) => setManualBillMonth(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
+                  >
+                    {[
+                      { m: 1, name: 'Januari' },
+                      { m: 2, name: 'Februari' },
+                      { m: 3, name: 'Maret' },
+                      { m: 4, name: 'April' },
+                      { m: 5, name: 'Mei' },
+                      { m: 6, name: 'Juni' },
+                      { m: 7, name: 'Juli' },
+                      { m: 8, name: 'Agustus' },
+                      { m: 9, name: 'September' },
+                      { m: 10, name: 'Oktober' },
+                      { m: 11, name: 'November' },
+                      { m: 12, name: 'Desember' }
+                    ].map(item => (
+                      <option key={item.m} value={item.m}>{item.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold uppercase text-slate-700 mb-1">
+                    Tahun Tagihan <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={manualBillYear}
+                    onChange={(e) => setManualBillYear(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium font-mono"
+                  >
+                    {[
+                      new Date().getFullYear() - 2,
+                      new Date().getFullYear() - 1,
+                      new Date().getFullYear(),
+                      new Date().getFullYear() + 1
+                    ].map(yr => (
+                      <option key={yr} value={yr}>{yr}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Nominal Tagihan (Rp) <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                  <input
+                    type="number"
+                    min="1000"
+                    step="1000"
+                    value={manualBillAmount}
+                    onChange={(e) => setManualBillAmount(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl font-bold text-brand-800"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Status Tagihan Ini <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={manualBillStatus}
+                  onChange={(e) => setManualBillStatus(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl font-bold text-slate-800"
+                >
+                  <option value="OVERDUE">MENUNGGAK (Tunggakan Masa Lampau Belum Dibayar)</option>
+                  <option value="PAID">LUNAS (Sudah Dibayar Warga / Rekonsiliasi Kas Lampau)</option>
+                  <option value="UNPAID">BELUM BAYAR (Tagihan Normal Berjalan)</option>
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {manualBillStatus === 'OVERDUE' && 'Akan masuk sebagai tunggakan resmi dan tercatat di reminder WhatsApp.'}
+                  {manualBillStatus === 'PAID' && 'Sistem akan otomatis menerbitkan kuitansi resmi bertanda lunas.'}
+                  {manualBillStatus === 'UNPAID' && 'Akan tampil sebagai tagihan aktif belum jatuh tempo.'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-slate-700 mb-1">
+                  Catatan / Keterangan (Opsional)
+                </label>
+                <input
+                  type="text"
+                  value={manualBillNotes}
+                  onChange={(e) => setManualBillNotes(e.target.value)}
+                  placeholder="Misal: Penyesuaian iuran sebelum aplikasi RESIK digunakan"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setManualBillModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 hover:bg-slate-50 rounded-xl text-slate-700 font-semibold transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition shadow-sm cursor-pointer"
+                >
+                  Terbitkan Tagihan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= RECEIPT MODAL VIEWER ================= */}
+      {viewingReceipt && (
+        <ReceiptModal
+          receipt={viewingReceipt}
+          onClose={() => setViewingReceipt(null)}
+        />
       )}
     </div>
   );

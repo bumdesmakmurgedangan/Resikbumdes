@@ -122,6 +122,7 @@ export interface ServiceLocation {
   categoryName?: string;
   tariffId: string;
   tariffAmount?: number;
+  customTariffAmount?: number | null; // Nominal tarif khusus per pelanggan/objek (misal UMKM / Perusahaan)
   latitude?: number | null;
   longitude?: number | null;
   status: 'ACTIVE' | 'INACTIVE';
@@ -297,6 +298,8 @@ export interface ImportItem {
   tarif: number;
   latitude?: number;
   longitude?: number;
+  statusBayarBulanIni?: string; // LUNAS atau BELUM BAYAR
+  jumlahTunggakanLampau?: number; // Jumlah bulan tunggakan sebelum bulan ini (misal 1, 2, 3)
 }
 
 export interface ImportError {

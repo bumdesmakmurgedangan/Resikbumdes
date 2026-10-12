@@ -724,6 +724,7 @@ class DataService {
       categoryId: string;
       tariffId: string;
       objectName?: string;
+      customTariffAmount?: number;
     },
     actorUser: User
   ): { customer: Customer; service: ServiceLocation } {
@@ -755,6 +756,7 @@ class DataService {
       rw: reg.rw,
       categoryId: category?.id,
       tariffId: tariff?.id,
+      customTariffAmount: (approvalData.customTariffAmount && Number(approvalData.customTariffAmount) > 0) ? Number(approvalData.customTariffAmount) : null,
       latitude: reg.latitude ?? undefined,
       longitude: reg.longitude ?? undefined
     }, actorUser);
@@ -824,16 +826,24 @@ class DataService {
         customerName: cust?.name,
         customerCode: cust?.customerCode,
         categoryName: cat?.name,
-        tariffAmount: trf?.amount
+        tariffAmount: (s.customTariffAmount && s.customTariffAmount > 0) ? s.customTariffAmount : trf?.amount
       };
     });
   }
 
   public saveServiceLocation(service: Partial<ServiceLocation>, actorUser?: User): ServiceLocation {
     const now = new Date().toISOString();
+    const customTariff = (service.customTariffAmount !== undefined && service.customTariffAmount !== null && Number(service.customTariffAmount) > 0)
+      ? Number(service.customTariffAmount)
+      : (service.customTariffAmount === null ? null : undefined);
+
     if (service.id && this.services.some(s => s.id === service.id)) {
       const idx = this.services.findIndex(s => s.id === service.id);
-      const updated = { ...this.services[idx], ...service };
+      const updated = {
+        ...this.services[idx],
+        ...service,
+        ...(customTariff !== undefined ? { customTariffAmount: customTariff } : {})
+      };
       this.services[idx] = updated;
       this.save(STORAGE_KEYS.SERVICES, this.services);
       if (actorUser) {
@@ -853,6 +863,7 @@ class DataService {
         rw: service.rw || 'RW 01',
         categoryId: service.categoryId || 'cat-1',
         tariffId: service.tariffId || 'trf-1',
+        customTariffAmount: customTariff || null,
         latitude: service.latitude ?? null,
         longitude: service.longitude ?? null,
         status: service.status || 'ACTIVE',
@@ -880,7 +891,9 @@ class DataService {
     const existing = this.bills.find(b => b.serviceId === service.id && b.billingYear === year && b.billingMonth === month);
     if (!existing) {
       const trf = this.tariffs.find(t => t.id === service.tariffId);
-      const amount = trf ? trf.amount : 20000;
+      const amount = (service.customTariffAmount && service.customTariffAmount > 0)
+        ? service.customTariffAmount
+        : (trf ? trf.amount : 20000);
       const dueDay = this.settings.defaultDueDay || 10;
       const dueDate = `${year}-${String(month).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
       const today = new Date().toISOString().split('T')[0];
@@ -900,6 +913,90 @@ class DataService {
       this.bills.push(newBill);
       this.save(STORAGE_KEYS.BILLS, this.bills);
     }
+  }
+
+  // Create Past or Manual Bill (PRD Section: Fleksibilitas Tagihan Lampau)
+  public createManualBill(data: {
+    serviceId: string;
+    billingYear: number;
+    billingMonth: number;
+    amount?: number;
+    status: 'PAID' | 'UNPAID' | 'OVERDUE';
+    paidDate?: string;
+    paymentMethod?: PaymentMethod;
+    notes?: string;
+  }, actorUser: User): { success: boolean; bill: Bill; payment?: Payment; receipt?: Receipt; message?: string } {
+    const srv = this.services.find(s => s.id === data.serviceId);
+    if (!srv) {
+      throw new Error('Lokasi layanan tidak ditemukan.');
+    }
+
+    // Check duplicate
+    const existing = this.bills.find(
+      b => b.serviceId === data.serviceId && b.billingYear === data.billingYear && b.billingMonth === data.billingMonth
+    );
+    if (existing) {
+      throw new Error(`Tagihan untuk periode bulan ${data.billingMonth}/${data.billingYear} pada objek ini sudah ada (${existing.status}).`);
+    }
+
+    const trf = this.tariffs.find(t => t.id === srv.tariffId);
+    const standardAmount = (srv.customTariffAmount && srv.customTariffAmount > 0)
+      ? srv.customTariffAmount
+      : (trf ? trf.amount : 20000);
+    const finalAmount = (data.amount !== undefined && data.amount > 0) ? Number(data.amount) : standardAmount;
+
+    const dueDay = this.settings.defaultDueDay || 10;
+    const dueDate = `${data.billingYear}-${String(data.billingMonth).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
+    const now = new Date().toISOString();
+
+    const newBill: Bill = {
+      id: 'bill-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      serviceId: srv.id,
+      billingYear: data.billingYear,
+      billingMonth: data.billingMonth,
+      amount: finalAmount,
+      dueDate,
+      status: data.status,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    this.bills.push(newBill);
+    this.save(STORAGE_KEYS.BILLS, this.bills);
+
+    let payment: Payment | undefined;
+    let receipt: Receipt | undefined;
+    if (data.status === 'PAID') {
+      const receiptNumber = this.generateReceiptNumber(data.billingYear, data.billingMonth);
+      payment = {
+        id: 'pay-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+        billId: newBill.id,
+        amount: finalAmount,
+        paymentMethod: data.paymentMethod || 'KANTOR',
+        paymentDate: data.paidDate || now,
+        status: 'VERIFIED',
+        recordedBy: actorUser.id,
+        recordedByName: actorUser.fullName,
+        paymentProofUrl: null,
+        notes: data.notes || `Pencatatan riwayat lunas (${data.billingMonth}/${data.billingYear}) dicatat oleh ${actorUser.fullName}`,
+        receiptNumber,
+        verifiedBy: actorUser.id,
+        verifiedByName: actorUser.fullName,
+        verifiedAt: data.paidDate || now,
+        createdAt: data.paidDate || now,
+        updatedAt: data.paidDate || now
+      };
+      this.payments.push(payment);
+      this.save(STORAGE_KEYS.PAYMENTS, this.payments);
+      receipt = this.getReceiptByPaymentId(payment.id) || undefined;
+    }
+
+    this.logAudit(actorUser.id, actorUser.fullName, 'BILL_CREATED_MANUAL', 'BILL', newBill.id, null, {
+      ...newBill,
+      paymentId: payment?.id
+    });
+
+    return { success: true, bill: newBill, payment, receipt };
   }
 
   public getBills(filter?: { customerId?: string; serviceId?: string; status?: BillStatus; month?: number; year?: number }): Bill[] {
@@ -1199,6 +1296,12 @@ class DataService {
     };
   }
 
+  public getReceiptByBillId(billId: string): Receipt | null {
+    const payment = this.payments.find(p => p.billId === billId && p.status === 'VERIFIED' && p.receiptNumber);
+    if (!payment) return null;
+    return this.getReceiptByPaymentId(payment.id);
+  }
+
   // ----------------------------------------------------
   // WHATSAPP REMINDER ENGINE (PRD Sections 41-54, 115)
   // ----------------------------------------------------
@@ -1411,7 +1514,9 @@ class DataService {
         'RW': 'RW 03',
         'Kategori': 'Rumah Tangga',
         'Nama Objek': 'Rumah Tinggal',
-        'Tarif': 20000,
+        'Tarif Bulanan': 20000,
+        'Status Bayar Bulan Ini': 'LUNAS',
+        'Jumlah Bulan Tunggakan Lampau': 0,
         'Titik Lokasi Google Maps': '-7.3885, 112.7214',
         'Latitude': -7.3885,
         'Longitude': 112.7214
@@ -1423,11 +1528,28 @@ class DataService {
         'RT': 'RT 02',
         'RW': 'RW 01',
         'Kategori': 'UMKM',
-        'Nama Objek': 'Toko Sembako Berkah',
-        'Tarif': 35000,
+        'Nama Objek': 'Kafe & Resto Berkah',
+        'Tarif Bulanan': 65000,
+        'Status Bayar Bulan Ini': 'BELUM BAYAR',
+        'Jumlah Bulan Tunggakan Lampau': 2,
         'Titik Lokasi Google Maps': 'https://maps.google.com/?q=-7.3865,112.7190',
         'Latitude': -7.3865,
         'Longitude': 112.7190
+      },
+      {
+        'Nama Pelanggan': 'PT Graha Abadi Sentosa',
+        'No HP': '081299887766',
+        'Alamat': 'Kawasan Pergudangan Blok C-10',
+        'RT': 'RT 01',
+        'RW': 'RW 05',
+        'Kategori': 'Perusahaan',
+        'Nama Objek': 'Pabrik Pengolahan Pakan',
+        'Tarif Bulanan': 250000,
+        'Status Bayar Bulan Ini': 'LUNAS',
+        'Jumlah Bulan Tunggakan Lampau': 0,
+        'Titik Lokasi Google Maps': '-7.3820, 112.7280',
+        'Latitude': -7.3820,
+        'Longitude': 112.7280
       }
     ];
   }
@@ -1524,6 +1646,11 @@ class DataService {
       const category = categoriesMap.get(categoryName) || this.categories[0];
       const tariff = tariffsList.find(t => t.categoryId === category.id) || tariffsList[0];
 
+      // Parse custom tariff amount if provided in Excel
+      const rawTariff = row['Tarif Bulanan'] ?? row['Tarif'] ?? row['Tarif Retribusi'] ?? tariff.amount;
+      const parsedTariff = (!isNaN(Number(rawTariff)) && Number(rawTariff) > 0) ? Number(rawTariff) : tariff.amount;
+      const isCustomTariff = parsedTariff !== tariff.amount;
+
       // Auto generate Customer Code & initial PIN
       const customerCode = this.generateCustomerCode(rw);
       const newCust = this.saveCustomer({
@@ -1534,10 +1661,10 @@ class DataService {
         pinHash: '1234', // default PIN
         isDefaultPin: true,
         status: 'ACTIVE'
-      });
+      }, actorUser);
 
-      // Auto generate Service Location
-      this.saveServiceLocation({
+      // Auto generate Service Location with customTariffAmount support
+      const newService = this.saveServiceLocation({
         customerId: newCust.id,
         name: String(objectName).trim(),
         address: String(address).trim(),
@@ -1545,10 +1672,76 @@ class DataService {
         rw: String(rw).trim(),
         categoryId: category.id,
         tariffId: tariff.id,
+        customTariffAmount: isCustomTariff ? parsedTariff : null,
         latitude: lat,
         longitude: lng,
         status: 'ACTIVE'
-      });
+      }, actorUser);
+
+      // Handle Status Bayar Bulan Berjalan (e.g. LUNAS vs BELUM BAYAR)
+      const rawStatusBayar = String(row['Status Bayar Bulan Ini'] ?? row['Status Bayar'] ?? row['Status Pembayaran'] ?? '').trim().toUpperCase();
+      const isPaidCurrentMonth = rawStatusBayar === 'LUNAS' || rawStatusBayar === 'PAID' || rawStatusBayar === 'SUDAH' || rawStatusBayar === 'SUDAH BAYAR';
+
+      if (isPaidCurrentMonth) {
+        // Cari tagihan bulan berjalan yang baru saja dibuat
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const currentBill = this.bills.find(b => b.serviceId === newService.id && b.billingYear === currentYear && b.billingMonth === currentMonth);
+        if (currentBill) {
+          currentBill.status = 'PAID';
+          currentBill.updatedAt = new Date().toISOString();
+          const receiptNumber = this.generateReceiptNumber(currentYear, currentMonth);
+          const payment: Payment = {
+            id: 'pay-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+            billId: currentBill.id,
+            amount: currentBill.amount,
+            paymentMethod: 'KANTOR',
+            paymentDate: new Date().toISOString(),
+            status: 'VERIFIED',
+            recordedBy: actorUser.id,
+            recordedByName: actorUser.fullName,
+            paymentProofUrl: null,
+            notes: 'Pencatatan status lunas via Import Excel BUMDes',
+            receiptNumber,
+            verifiedBy: actorUser.id,
+            verifiedByName: actorUser.fullName,
+            verifiedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          this.payments.push(payment);
+          this.save(STORAGE_KEYS.PAYMENTS, this.payments);
+          this.save(STORAGE_KEYS.BILLS, this.bills);
+        }
+      }
+
+      // Handle Tunggakan Lampau (Jumlah Bulan Menunggak Sebelum Bulan Ini)
+      const rawTunggakan = row['Jumlah Bulan Tunggakan Lampau'] ?? row['Tunggakan Lampau'] ?? row['Tunggakan'] ?? 0;
+      const overdueMonthsCount = (!isNaN(Number(rawTunggakan)) && Number(rawTunggakan) > 0)
+        ? Math.min(Math.floor(Number(rawTunggakan)), 24)
+        : 0;
+
+      if (overdueMonthsCount > 0) {
+        const now = new Date();
+        let targetYear = now.getFullYear();
+        let targetMonth = now.getMonth() + 1; // bulan berjalan (misal 10)
+
+        for (let i = 1; i <= overdueMonthsCount; i++) {
+          targetMonth -= 1;
+          if (targetMonth < 1) {
+            targetMonth = 12;
+            targetYear -= 1;
+          }
+          this.createManualBill({
+            serviceId: newService.id,
+            billingYear: targetYear,
+            billingMonth: targetMonth,
+            amount: parsedTariff,
+            status: 'OVERDUE'
+          }, actorUser);
+        }
+      }
 
       createdCustomers.push(newCust);
     });
