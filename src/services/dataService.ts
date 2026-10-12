@@ -846,6 +846,22 @@ class DataService {
       };
       this.services[idx] = updated;
       this.save(STORAGE_KEYS.SERVICES, this.services);
+
+      // Sinkronkan nominal ke tagihan bulan berjalan yang masih BELUM BAYAR (UNPAID)
+      const trf = this.tariffs.find(t => t.id === updated.tariffId) || this.tariffs.find(t => t.categoryId === updated.categoryId);
+      const effectiveAmount = (updated.customTariffAmount && updated.customTariffAmount > 0)
+        ? updated.customTariffAmount
+        : (trf?.amount || 20000);
+      const nowDt = new Date();
+      const currentYear = nowDt.getFullYear();
+      const currentMonth = nowDt.getMonth() + 1;
+      const currentUnpaidBill = this.bills.find(b => b.serviceId === updated.id && b.billingYear === currentYear && b.billingMonth === currentMonth && b.status === 'UNPAID');
+      if (currentUnpaidBill && currentUnpaidBill.amount !== effectiveAmount) {
+        currentUnpaidBill.amount = effectiveAmount;
+        currentUnpaidBill.updatedAt = now;
+        this.save(STORAGE_KEYS.BILLS, this.bills);
+      }
+
       if (actorUser) {
         this.logAudit(actorUser.id, actorUser.fullName, 'SERVICE_UPDATED', 'SERVICE_LOCATION', updated.id, null, updated);
       }

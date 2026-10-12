@@ -132,6 +132,9 @@ export const CustomersView: React.FC = () => {
   const [editAddress, setEditAddress] = useState('');
   const [editStatus, setEditStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
   const [syncServiceAddress, setSyncServiceAddress] = useState(true);
+  const [editCustServiceId, setEditCustServiceId] = useState('');
+  const [editCustCategoryId, setEditCustCategoryId] = useState('');
+  const [editCustCustomTariff, setEditCustCustomTariff] = useState('');
 
   // Edit Service Location Modal State
   const [editingService, setEditingService] = useState<ServiceLocation | null>(null);
@@ -296,6 +299,18 @@ export const CustomersView: React.FC = () => {
     setEditAddress(customer.address);
     setEditStatus(customer.status);
     setSyncServiceAddress(true);
+
+    const custServices = allServices.filter(s => s.customerId === customer.id);
+    const mainSrv = custServices[0];
+    if (mainSrv) {
+      setEditCustServiceId(mainSrv.id);
+      setEditCustCategoryId(mainSrv.categoryId);
+      setEditCustCustomTariff(mainSrv.customTariffAmount ? mainSrv.customTariffAmount.toString() : '');
+    } else {
+      setEditCustServiceId('');
+      setEditCustCategoryId(categories[0]?.id || '');
+      setEditCustCustomTariff('');
+    }
   };
 
   // Save Edit Customer Changes
@@ -316,18 +331,24 @@ export const CustomersView: React.FC = () => {
         status: editStatus
       }, currentUser);
 
-      // Sinkronkan alamat ke lokasi layanan jika dicentang
-      if (syncServiceAddress) {
+      // Sinkronkan alamat dan perbarui kategori serta tarif khusus lokasi layanan utama
+      if (editCustServiceId) {
+        const customAmount = editCustCustomTariff ? parseFloat(editCustCustomTariff) : null;
+        const selectedTrf = tariffs.find(t => t.categoryId === editCustCategoryId);
+        dataService.saveServiceLocation({
+          id: editCustServiceId,
+          categoryId: editCustCategoryId,
+          tariffId: selectedTrf?.id,
+          customTariffAmount: (customAmount && customAmount > 0) ? customAmount : null,
+          ...(syncServiceAddress ? { address: editAddress.trim() } : {})
+        }, currentUser);
+      } else if (syncServiceAddress) {
         const custServices = allServices.filter(s => s.customerId === editingCustomer.id);
         if (custServices.length > 0) {
-          custServices.forEach((s, idx) => {
-            if (idx === 0 || custServices.length === 1) {
-              dataService.saveServiceLocation({
-                id: s.id,
-                address: editAddress.trim()
-              }, currentUser);
-            }
-          });
+          dataService.saveServiceLocation({
+            id: custServices[0].id,
+            address: editAddress.trim()
+          }, currentUser);
         }
       }
 
@@ -338,7 +359,7 @@ export const CustomersView: React.FC = () => {
 
       setEditingCustomer(null);
       setRefreshKey(prev => prev + 1);
-      alert(`Data pelanggan ${updated.name} (${updated.customerCode}) berhasil diperbarui!`);
+      alert(`Data dan tarif pelanggan ${updated.name} (${updated.customerCode}) berhasil diperbarui!`);
     } catch (err: any) {
       alert(err.message || 'Gagal memperbarui data pelanggan');
     }
@@ -668,14 +689,22 @@ export const CustomersView: React.FC = () => {
                     </td>
 
                     <td className="py-3 px-3">
-                      <div className="flex flex-wrap gap-1">
+                      <div className="space-y-1">
                         {custServices.map(s => (
-                          <span
-                            key={s.id}
-                            className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg text-[10px] font-medium"
-                          >
-                            {s.name} ({s.rw})
-                          </span>
+                          <div key={s.id} className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-slate-800 text-[11px]">{s.name} ({s.rw})</span>
+                            <span className="bg-slate-100 text-slate-600 font-bold px-1.5 py-0.2 rounded text-[9px]">
+                              {s.categoryName || 'Rumah Tangga'}
+                            </span>
+                            <span className="font-mono text-brand-800 font-bold text-[10px]">
+                              Rp {s.tariffAmount?.toLocaleString('id-ID')}/bln
+                            </span>
+                            {s.customTariffAmount && s.customTariffAmount > 0 ? (
+                              <span className="bg-amber-100 text-amber-800 font-black text-[9px] px-1.5 py-0.2 rounded border border-amber-200">
+                                Tarif Khusus
+                              </span>
+                            ) : null}
+                          </div>
                         ))}
                       </div>
                     </td>
@@ -695,18 +724,19 @@ export const CustomersView: React.FC = () => {
                     <td className="py-3 px-3 text-right space-x-1.5 whitespace-nowrap">
                       <button
                         onClick={() => setSelectedCustomer(cust)}
-                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg text-slate-700 font-semibold transition"
-                        title="Lihat Detail & Layanan"
+                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg text-slate-700 font-semibold transition cursor-pointer"
+                        title="Lihat Detail, Riwayat Tagihan & Layanan"
                       >
-                        Detail & Layanan
+                        Detail &amp; Layanan
                       </button>
 
                       <button
                         onClick={() => handleOpenEditCustomer(cust)}
-                        className="px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs transition inline-flex items-center"
-                        title="Edit Data Pelanggan (Nama, No WA, Alamat, Status)"
+                        className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer"
+                        title="Edit Data Pelanggan, Kategori & Tarif Khusus"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit / Tarif</span>
                       </button>
 
                       <button
@@ -1274,10 +1304,10 @@ export const CustomersView: React.FC = () => {
                         type="button"
                         onClick={() => handleOpenEditService(srv)}
                         className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg text-[11px] font-bold border border-slate-200 hover:border-blue-300 transition shadow-2xs cursor-pointer"
-                        title="Edit Data Lokasi Layanan Ini"
+                        title="Edit Data Lokasi & Atur Kustom Tarif Objek Ini"
                       >
                         <Edit3 className="w-3 h-3 text-blue-600" />
-                        <span>Edit</span>
+                        <span>Edit Objek / Tarif</span>
                       </button>
                       {srv.latitude && srv.longitude && (
                         <a
@@ -1400,7 +1430,7 @@ export const CustomersView: React.FC = () => {
                 className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                <span>Edit Data Pelanggan</span>
+                <span>Edit Data &amp; Tarif Pelanggan</span>
               </button>
               <button
                 type="button"
@@ -1995,6 +2025,64 @@ export const CustomersView: React.FC = () => {
                 </label>
                 <p className="text-[10px] text-slate-400 ml-6">
                   Jika dicentang, alamat pada objek layanan kebersihan pelanggan ini otomatis diselaraskan dengan alamat baru di atas.
+                </p>
+              </div>
+
+              {/* Pengaturan Kategori & Tarif Khusus (UMKM / Perusahaan) */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                    <DollarSign className="w-4 h-4 text-brand-600" />
+                    <span>Kategori &amp; Pengaturan Tarif Iuran</span>
+                  </div>
+                  <span className="text-[10px] text-brand-800 bg-brand-50 px-2 py-0.5 rounded-full font-bold border border-brand-200">
+                    Fleksibel UMKM / Usaha
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold uppercase text-[10px] text-slate-600 mb-1">
+                      Kategori Pelanggan
+                    </label>
+                    <select
+                      value={editCustCategoryId}
+                      onChange={(e) => setEditCustCategoryId(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:border-brand-500"
+                    >
+                      {categories.map((c) => {
+                        const trf = tariffs.find(t => t.categoryId === c.id);
+                        return (
+                          <option key={c.id} value={c.id}>
+                            {c.name} {trf ? `(Standar: Rp ${trf.amount.toLocaleString('id-ID')})` : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold uppercase text-[10px] text-slate-600 mb-1 flex items-center justify-between">
+                      <span>Tarif Khusus Pelanggan</span>
+                      <span className="text-[9px] text-brand-700 font-semibold lowercase">Opsional</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={editCustCustomTariff}
+                        onChange={(e) => setEditCustCustomTariff(e.target.value)}
+                        placeholder={`Standar: ${(tariffs.find(t => t.categoryId === editCustCategoryId)?.amount || 0).toLocaleString('id-ID')}`}
+                        className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:border-brand-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-slate-500 leading-relaxed">
+                  💡 <strong>Catatan:</strong> Cocok untuk pelanggan UMKM / Perusahaan karena nominal tagihan berbeda-beda tergantung skala usaha / volume sampah. Jika dikosongkan, tagihan akan otomatis mengikuti tarif standar kategori.
                 </p>
               </div>
 
