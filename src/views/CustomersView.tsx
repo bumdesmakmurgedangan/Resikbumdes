@@ -652,10 +652,9 @@ export const CustomersView: React.FC = () => {
           <table className="w-full text-left text-xs divide-y divide-slate-200">
             <thead className="bg-slate-50 text-slate-600 uppercase tracking-wider font-bold text-[11px]">
               <tr>
-                <th className="py-3.5 px-4 w-32 whitespace-nowrap">ID Pelanggan</th>
-                <th className="py-3.5 px-4 min-w-[200px]">Nama &amp; Alamat</th>
-                <th className="py-3.5 px-4 w-36 whitespace-nowrap">No HP / WhatsApp</th>
-                <th className="py-3.5 px-4 min-w-[300px]">Lokasi Layanan &amp; Tarif</th>
+                <th className="py-3.5 px-4 w-36 whitespace-nowrap">ID Pelanggan</th>
+                <th className="py-3.5 px-4 min-w-[220px]">Nama &amp; Alamat</th>
+                <th className="py-3.5 px-4 w-44 whitespace-nowrap">No HP / WhatsApp</th>
                 <th className="py-3.5 px-4 text-center w-28 whitespace-nowrap">Status</th>
                 <th className="py-3.5 px-4 text-right w-64 whitespace-nowrap">Aksi</th>
               </tr>
@@ -663,7 +662,7 @@ export const CustomersView: React.FC = () => {
             <tbody className="divide-y divide-slate-100 bg-white">
               {filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                  <td colSpan={5} className="py-12 text-center text-slate-400">
                     <Users className="w-8 h-8 mx-auto mb-2 text-slate-300" />
                     <p className="font-semibold text-sm text-slate-600">Tidak ada data pelanggan yang cocok</p>
                     <p className="text-xs text-slate-400 mt-0.5">Coba ubah kata kunci pencarian atau filter RW / Kategori</p>
@@ -671,8 +670,6 @@ export const CustomersView: React.FC = () => {
                 </tr>
               ) : (
                 filteredCustomers.map((cust) => {
-                  const custServices = allServices.filter(s => s.customerId === cust.id);
-
                   return (
                     <tr key={cust.id} className="hover:bg-slate-50/70 transition">
                       <td className="py-3.5 px-4 align-middle whitespace-nowrap">
@@ -700,37 +697,6 @@ export const CustomersView: React.FC = () => {
                         ) : (
                           <span className="text-slate-400 italic">Tidak ada</span>
                         )}
-                      </td>
-
-                      <td className="py-3.5 px-4 align-middle">
-                        <div className="flex flex-col gap-1.5">
-                          {custServices.length === 0 ? (
-                            <span className="text-slate-400 italic text-[11px]">Belum ada lokasi layanan</span>
-                          ) : (
-                            custServices.map(s => (
-                              <div
-                                key={s.id}
-                                className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200/90 px-2.5 py-1 rounded-lg text-xs transition w-fit max-w-full"
-                              >
-                                <span className="font-semibold text-slate-800 whitespace-nowrap text-[11px]">
-                                  {s.name} <span className="text-slate-400 font-normal">({s.rw})</span>
-                                </span>
-                                <span className="inline-block w-1 h-1 rounded-full bg-slate-300" />
-                                <span className="bg-white text-slate-600 font-semibold px-1.5 py-0.5 rounded border border-slate-200 text-[10px] whitespace-nowrap">
-                                  {s.categoryName || 'Rumah Tangga'}
-                                </span>
-                                <span className="font-mono text-brand-800 font-bold text-[11px] whitespace-nowrap">
-                                  Rp {s.tariffAmount?.toLocaleString('id-ID')}<span className="text-[9px] font-normal text-slate-400">/bln</span>
-                                </span>
-                                {s.customTariffAmount && s.customTariffAmount > 0 ? (
-                                  <span className="bg-amber-100 text-amber-800 font-bold text-[9px] px-1.5 py-0.5 rounded border border-amber-300 whitespace-nowrap">
-                                    Tarif Khusus
-                                  </span>
-                                ) : null}
-                              </div>
-                            ))
-                          )}
-                        </div>
                       </td>
 
                       <td className="py-3.5 px-4 align-middle text-center whitespace-nowrap">
@@ -792,7 +758,7 @@ export const CustomersView: React.FC = () => {
         </div>
         <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between">
           <span>Menampilkan <strong>{filteredCustomers.length}</strong> dari <strong>{customers.length}</strong> pelanggan terdaftar</span>
-          <span className="text-[11px] text-slate-400 hidden sm:inline">Pilih tombol &quot;Edit / Tarif&quot; untuk mengubah kategori atau tarif khusus pelanggan</span>
+          <span className="text-[11px] text-slate-400 hidden sm:inline">Pilih tombol &quot;Detail &amp; Layanan&quot; untuk melihat objek/tarif atau &quot;Edit / Tarif&quot; untuk mengubah data</span>
         </div>
       </div>
       </>

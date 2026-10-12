@@ -61,6 +61,9 @@ class DataService {
     if (!this.settings.appUrl) {
       this.settings.appUrl = INITIAL_SYSTEM_SETTINGS.appUrl || 'https://resik.bumdesmakmurgedangan.my.id/';
     }
+    if (!this.settings.website || this.settings.website === 'https://bumdesmakmurgedangan.my.id') {
+      this.settings.website = 'https://www.bumdesmakmurgedangan.my.id';
+    }
     this.users = this.load(STORAGE_KEYS.USERS, INITIAL_USERS);
     this.roles = this.load(STORAGE_KEYS.ROLES, INITIAL_ROLES);
     this.permissions = INITIAL_PERMISSIONS;

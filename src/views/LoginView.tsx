@@ -88,7 +88,7 @@ export const LoginView: React.FC = () => {
               <img
                 src={settings.logoUrl}
                 alt="Logo RESIK"
-                className="w-[250px] max-w-full h-auto max-h-[250px] object-contain drop-shadow-md transition-transform hover:scale-[1.02]"
+                className="w-[300px] max-w-full h-auto max-h-[300px] object-contain drop-shadow-md transition-transform hover:scale-[1.02]"
                 onError={() => setLogoError(true)}
               />
             ) : (
@@ -100,12 +100,18 @@ export const LoginView: React.FC = () => {
               </div>
             )}
 
-            {/* URL Web App Subdomain / Website BUMDes Text Only */}
-            {(settings.appUrl || settings.website) && (
-              <p className="text-xs text-slate-500 font-medium mt-2.5 tracking-wide select-all font-mono">
-                {(settings.appUrl || settings.website).replace(/^https?:\/\//, '').replace(/\/$/, '')}
-              </p>
-            )}
+            {/* Website Resmi BUMDes */}
+            <a
+              href={settings.website ? (settings.website.startsWith('http') ? settings.website : `https://${settings.website}`) : 'https://www.bumdesmakmurgedangan.my.id'}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-slate-500 hover:text-brand-700 font-medium mt-2.5 tracking-wide select-all font-mono transition-colors"
+              title="Kunjungi Website Resmi BUMDes Makmur Gedangan"
+            >
+              {settings.website
+                ? settings.website.replace(/^https?:\/\//, '').replace(/\/$/, '')
+                : 'www.bumdesmakmurgedangan.my.id'}
+            </a>
           </div>
 
           {/* Login Mode Tabs */}
