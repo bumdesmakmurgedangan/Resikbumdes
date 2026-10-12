@@ -210,11 +210,11 @@ export const OverdueView: React.FC = () => {
       {/* Overdue Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+          <table className="w-full text-left text-xs divide-y divide-slate-200">
+            <thead className="bg-slate-50 text-slate-600 uppercase tracking-wider font-bold text-[11px]">
               <tr>
-                <th className="py-3 px-3 w-8">
-                  <button onClick={handleSelectAll} className="text-slate-400 hover:text-slate-600">
+                <th className="py-3 px-3 w-9 text-center">
+                  <button onClick={handleSelectAll} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                     {selectedCustomerIds.length === filteredList.length && filteredList.length > 0 ? (
                       <CheckSquare className="w-4 h-4 text-brand-600" />
                     ) : (
@@ -222,16 +222,16 @@ export const OverdueView: React.FC = () => {
                     )}
                   </button>
                 </th>
-                <th className="py-3 px-3">ID Pelanggan</th>
-                <th className="py-3 px-3">Nama Warga</th>
-                <th className="py-3 px-3">No HP / WhatsApp</th>
-                <th className="py-3 px-3">Bulan Belum Lunas</th>
-                <th className="py-3 px-3">Total Nominal Tunggakan</th>
-                <th className="py-3 px-3">Terakhir Diingatkan</th>
-                <th className="py-3 px-3 text-right">Tindakan</th>
+                <th className="py-3.5 px-3 w-28 whitespace-nowrap">ID Pelanggan</th>
+                <th className="py-3.5 px-3 min-w-[150px]">Nama Warga</th>
+                <th className="py-3.5 px-3 w-32 whitespace-nowrap">No HP / WhatsApp</th>
+                <th className="py-3.5 px-3 w-24 text-center whitespace-nowrap">Bulan</th>
+                <th className="py-3.5 px-3 w-32 text-right whitespace-nowrap">Total Tunggakan</th>
+                <th className="py-3.5 px-3 w-32 text-center whitespace-nowrap">Terakhir Diingatkan</th>
+                <th className="py-3.5 px-3 w-28 text-right whitespace-nowrap">Tindakan</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {filteredList.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
@@ -244,11 +244,11 @@ export const OverdueView: React.FC = () => {
                   const hasPhone = Boolean(item.customer.phone && item.customer.phone.trim().length > 0);
 
                   return (
-                    <tr key={item.customer.id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-3">
+                    <tr key={item.customer.id} className="hover:bg-slate-50/70 transition">
+                      <td className="py-3 px-3 text-center align-middle">
                         <button
                           onClick={() => toggleSelectCustomer(item.customer.id)}
-                          className="text-slate-400 hover:text-slate-600"
+                          className="text-slate-400 hover:text-slate-600 cursor-pointer"
                         >
                           {isSelected ? (
                             <CheckSquare className="w-4 h-4 text-brand-600" />
@@ -258,43 +258,44 @@ export const OverdueView: React.FC = () => {
                         </button>
                       </td>
 
-                      <td className="py-3 px-3 font-mono font-bold text-brand-800">
-                        {item.customer.customerCode}
+                      <td className="py-3 px-3 font-mono font-bold text-brand-800 align-middle whitespace-nowrap text-xs">
+                        <span className="bg-brand-50 border border-brand-200/80 px-2 py-0.5 rounded-md inline-block">
+                          {item.customer.customerCode}
+                        </span>
                       </td>
 
-                      <td className="py-3 px-3">
-                        <div className="font-bold text-slate-900">{item.customer.name}</div>
-                        <div className="text-[11px] text-slate-400 truncate max-w-xs">
-                          {item.customer.address} • ({item.serviceNames.join(', ')})
+                      <td className="py-3 px-3 align-middle">
+                        <div className="font-bold text-slate-900 text-xs">{item.customer.name}</div>
+                        <div className="text-[11px] text-slate-400 truncate max-w-[160px] mt-0.5" title={item.customer.address}>
+                          {item.customer.address}
                         </div>
                       </td>
 
-                      <td className="py-3 px-3 font-mono">
+                      <td className="py-3 px-3 font-mono align-middle whitespace-nowrap text-xs">
                         {hasPhone ? (
-                          <span className="text-slate-800">{item.customer.phone}</span>
+                          <span className="text-slate-800 font-medium">{item.customer.phone}</span>
                         ) : (
-                          /* Indikator PRD Section 46 */
-                          <span className="text-rose-500 font-sans italic text-[11px]">
-                            Tidak ada nomor WhatsApp
+                          <span className="text-slate-400 italic text-[11px]">
+                            Tanpa WA
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3 px-3">
-                        <div className="flex flex-wrap gap-1">
+                      <td className="py-3 px-3 align-middle text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1 flex-wrap">
                           {item.unpaidMonths.map((m, i) => (
-                            <span key={i} className="bg-red-50 text-red-700 font-semibold text-[10px] px-2 py-0.5 rounded-full border border-red-100">
+                            <span key={i} className="bg-red-50 text-red-700 font-bold text-[10px] px-2 py-0.5 rounded-full border border-red-200 whitespace-nowrap">
                               {m}
                             </span>
                           ))}
                         </div>
                       </td>
 
-                      <td className="py-3 px-3 font-black text-red-600 text-sm">
+                      <td className="py-3 px-3 font-black text-red-600 text-xs font-mono align-middle text-right whitespace-nowrap">
                         Rp {item.totalAmount.toLocaleString('id-ID')}
                       </td>
 
-                      <td className="py-3 px-3 text-[11px] text-slate-500">
+                      <td className="py-3 px-3 text-[11px] text-slate-500 align-middle text-center whitespace-nowrap">
                         {item.customer.lastRemindedAt ? (
                           <div>
                             <div className="font-medium text-slate-700">
@@ -303,15 +304,15 @@ export const OverdueView: React.FC = () => {
                             <div className="text-[10px] text-emerald-600 font-semibold">Status: OPENED</div>
                           </div>
                         ) : (
-                          <span className="text-slate-400">Belum pernah</span>
+                          <span className="text-slate-400 italic">Belum pernah</span>
                         )}
                       </td>
 
-                      <td className="py-3 px-3 text-right">
+                      <td className="py-3 px-3 text-right align-middle whitespace-nowrap">
                         {hasPhone ? (
                           <button
                             onClick={() => handleOpenReminder(item.customer.id)}
-                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs transition shadow-xs inline-flex items-center gap-1.5"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs transition shadow-2xs inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                           >
                             <MessageSquare className="w-3.5 h-3.5" />
                             <span>Ingatkan WA</span>
@@ -319,7 +320,7 @@ export const OverdueView: React.FC = () => {
                         ) : (
                           <button
                             disabled
-                            className="px-3 py-1.5 bg-slate-100 text-slate-400 rounded-lg text-xs font-medium cursor-not-allowed"
+                            className="px-3 py-1.5 bg-slate-100 text-slate-400 rounded-lg text-xs font-medium cursor-not-allowed whitespace-nowrap"
                             title="Nomor WhatsApp tidak tersedia"
                           >
                             Tanpa WA
@@ -332,6 +333,10 @@ export const OverdueView: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between">
+          <span>Menampilkan <strong>{filteredList.length}</strong> dari <strong>{overdueItems.length}</strong> pelanggan menunggak</span>
+          <span className="text-[11px] text-slate-400 hidden sm:inline">Pilih centang massal untuk menyiapkan pesan atau klik tombol &quot;Ingatkan WA&quot; per pelanggan</span>
         </div>
       </div>
 
