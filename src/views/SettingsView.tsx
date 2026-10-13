@@ -1553,13 +1553,32 @@ export const SettingsView: React.FC = () => {
                 <label className="block font-bold uppercase text-slate-700 mb-1">Tipe Media</label>
                 <select
                   value={editingLink.type}
-                  onChange={(e) => setEditingLink({ ...editingLink, type: e.target.value as any })}
+                  onChange={(e) => {
+                    const newType = e.target.value as any;
+                    const defaultLabels: Record<string, string> = {
+                      WHATSAPP: 'WhatsApp',
+                      INSTAGRAM: 'Instagram',
+                      TIKTOK: 'TikTok',
+                      FACEBOOK: 'Facebook',
+                      YOUTUBE: 'YouTube',
+                      WEBSITE: 'Website',
+                      EMAIL: 'Email',
+                      MAP: 'Google Maps'
+                    };
+                    const isDefaultCurrent = !editingLink.label || Object.values(defaultLabels).includes(editingLink.label);
+                    setEditingLink({
+                      ...editingLink,
+                      type: newType,
+                      label: isDefaultCurrent ? (defaultLabels[newType] || editingLink.label) : editingLink.label
+                    });
+                  }}
                   className="w-full px-3 py-2 border border-slate-300 rounded-xl"
                 >
                   <option value="WHATSAPP">WhatsApp</option>
                   <option value="INSTAGRAM">Instagram</option>
                   <option value="TIKTOK">TikTok</option>
                   <option value="FACEBOOK">Facebook</option>
+                  <option value="YOUTUBE">YouTube</option>
                   <option value="WEBSITE">Website</option>
                   <option value="EMAIL">Email</option>
                   <option value="MAP">Google Maps</option>

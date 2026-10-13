@@ -103,11 +103,30 @@ class DataService {
       INSTAGRAM: 'Instagram',
       TIKTOK: 'TikTok',
       FACEBOOK: 'Facebook',
+      YOUTUBE: 'YouTube',
       WEBSITE: 'Website',
       EMAIL: 'Email',
       MAP: 'Google Maps'
     };
     let orgLinksNeedSave = false;
+
+    // Auto-migrate: ensure YouTube link exists in user's saved list
+    if (!this.orgLinks.some(l => l.type === 'YOUTUBE')) {
+      const defaultYoutube = INITIAL_ORGANIZATION_LINKS.find(l => l.type === 'YOUTUBE');
+      if (defaultYoutube) {
+        // Insert right after Facebook or at the end before Map/Website
+        const fbIdx = this.orgLinks.findIndex(l => l.type === 'FACEBOOK');
+        if (fbIdx >= 0) {
+          this.orgLinks.splice(fbIdx + 1, 0, defaultYoutube);
+        } else {
+          this.orgLinks.push(defaultYoutube);
+        }
+        // Re-sequence sortOrder
+        this.orgLinks = this.orgLinks.map((item, idx) => ({ ...item, sortOrder: idx + 1 }));
+        orgLinksNeedSave = true;
+      }
+    }
+
     this.orgLinks = this.orgLinks.map(l => {
       if (cleanBrandNames[l.type] && l.label !== cleanBrandNames[l.type] && (
         l.label.includes('BUMDes') || l.label.includes('Resmi') || l.label.includes('Page') ||

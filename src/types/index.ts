@@ -8,7 +8,7 @@ export type PaymentMethod = 'PETUGAS' | 'KANTOR' | 'TRANSFER' | 'QRIS';
 
 export type PaymentStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
 
-export type SocialType = 'WHATSAPP' | 'INSTAGRAM' | 'TIKTOK' | 'FACEBOOK' | 'WEBSITE' | 'EMAIL' | 'MAP';
+export type SocialType = 'WHATSAPP' | 'INSTAGRAM' | 'TIKTOK' | 'FACEBOOK' | 'YOUTUBE' | 'WEBSITE' | 'EMAIL' | 'MAP';
 
 export type TemplateType = 'WHATSAPP_OVERDUE_REMINDER' | 'WHATSAPP_ACCOUNT_CONFIRMATION';
 

@@ -207,31 +207,41 @@ export const INITIAL_ORGANIZATION_LINKS: OrganizationLink[] = [
   },
   {
     id: 'ol-5',
-    type: 'WEBSITE',
-    label: 'Website',
-    url: 'https://bumdesgedangan.id',
-    icon: 'Globe',
+    type: 'YOUTUBE',
+    label: 'YouTube',
+    url: 'https://youtube.com/@bumdesmakmurgedangan',
+    icon: 'Video',
     sortOrder: 5,
     isActive: true,
     createdAt: '2026-01-01T00:00:00Z'
   },
   {
     id: 'ol-6',
-    type: 'EMAIL',
-    label: 'Email',
-    url: 'mailto:bumdes.gedangan@gmail.com',
-    icon: 'Mail',
+    type: 'WEBSITE',
+    label: 'Website',
+    url: 'https://bumdesgedangan.id',
+    icon: 'Globe',
     sortOrder: 6,
     isActive: true,
     createdAt: '2026-01-01T00:00:00Z'
   },
   {
     id: 'ol-7',
+    type: 'EMAIL',
+    label: 'Email',
+    url: 'mailto:bumdes.gedangan@gmail.com',
+    icon: 'Mail',
+    sortOrder: 7,
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00Z'
+  },
+  {
+    id: 'ol-8',
     type: 'MAP',
     label: 'Google Maps',
     url: 'https://maps.google.com/?q=Gedangan+Sidoarjo',
     icon: 'MapPin',
-    sortOrder: 7,
+    sortOrder: 8,
     isActive: true,
     createdAt: '2026-01-01T00:00:00Z'
   }
