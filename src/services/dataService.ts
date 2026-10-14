@@ -137,6 +137,19 @@ class DataService {
       }
       return l;
     });
+
+    // Ensure strictly unique IDs for orgLinks
+    const seenOrgLinkIds = new Set<string>();
+    this.orgLinks = this.orgLinks.map((link, idx) => {
+      let id = link.id;
+      if (!id || seenOrgLinkIds.has(id)) {
+        id = `ol-${idx + 1}-${link.type.toLowerCase()}`;
+        orgLinksNeedSave = true;
+      }
+      seenOrgLinkIds.add(id);
+      return { ...link, id };
+    });
+
     if (orgLinksNeedSave) {
       this.save(STORAGE_KEYS.ORG_LINKS, this.orgLinks);
     }
