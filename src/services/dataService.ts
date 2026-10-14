@@ -1898,6 +1898,58 @@ class DataService {
     };
   }
 
+  // ----------------------------------------------------
+  // COLLECTIBILITY STATS PER RW (PRD Section 81 Dashboard Widget)
+  // ----------------------------------------------------
+  public getRwCollectibilityStats(month = 10, year = 2026) {
+    this.updateOverdueStatus();
+    const regions = this.getRegions();
+    
+    // Get unique active RW codes (e.g. RW 01, RW 02, etc.)
+    let uniqueRws: string[] = Array.from(
+      new Set(regions.filter(r => r.status === 'ACTIVE').map(r => r.rwCode))
+    ).sort();
+
+    if (uniqueRws.length === 0) {
+      uniqueRws = ['RW 01', 'RW 02', 'RW 03', 'RW 04', 'RW 05', 'RW 06', 'RW 07'];
+    }
+
+    // Map serviceId -> service
+    const serviceMap = new Map<string, any>();
+    for (const s of this.services) {
+      serviceMap.set(s.id, s);
+    }
+
+    // Bills for the given month & year
+    const currentMonthBills = this.bills.filter(
+      b => b.billingYear === year && b.billingMonth === month
+    );
+
+    return uniqueRws.map(rwCode => {
+      // Find bills for this RW in current month
+      const rwBills = currentMonthBills.filter(b => {
+        const srv = serviceMap.get(b.serviceId);
+        return srv && srv.rw === rwCode;
+      });
+
+      const totalBills = rwBills.length;
+      const paidBills = rwBills.filter(b => b.status === 'PAID');
+      const paidCount = paidBills.length;
+      const paidAmount = paidBills.reduce((acc, b) => acc + Number(b.amount), 0);
+      const totalAmount = rwBills.reduce((acc, b) => acc + Number(b.amount), 0);
+      const percentage = totalBills > 0 ? Math.round((paidCount / totalBills) * 100) : 0;
+
+      return {
+        rwCode,
+        totalBills,
+        paidCount,
+        paidAmount,
+        totalAmount,
+        percentage
+      };
+    });
+  }
+
   // Reset database to initial seed for testing
   public resetToDefaultSeed() {
     localStorage.clear();

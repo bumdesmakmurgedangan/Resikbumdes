@@ -16,6 +16,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onNaviga
   if (!currentUser) return null;
 
   const stats = dataService.getDashboardStats();
+  const rwStats = dataService.getRwCollectibilityStats();
   const overdueCustomers = dataService.getOverdueCustomers().slice(0, 5); // top 5 for quick action
   const pendingPayments = dataService.getPayments({ status: 'PENDING' });
   const pendingRegistrationsCount = dataService.getPendingCustomerRegistrationsCount();
@@ -184,6 +185,73 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onNaviga
             Rp {stats.totalRevenueThisMonth.toLocaleString('id-ID')}
           </div>
           <div className="text-[11px] text-slate-400 mt-1">Penerimaan resmi kas BUMDes (Okt 2026)</div>
+        </div>
+      </div>
+
+      {/* Tingkat Kolektibilitas Iuran per Wilayah RW */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-xs">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+              Tingkat Kolektibilitas Iuran per Wilayah RW
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">
+              Performa pembayaran iuran warga berdasarkan wilayah rukun warga
+            </p>
+          </div>
+          <span className="text-xs font-semibold text-slate-400">
+            Bulan Berjalan
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+          {rwStats.map((item) => {
+            const isFull = item.percentage === 100;
+            const hasProgress = item.percentage > 0;
+
+            return (
+              <div
+                key={item.rwCode}
+                onClick={() => onNavigateTab('overdue')}
+                title={`Klik untuk melihat rincian ${item.rwCode}`}
+                className="bg-white border border-slate-200/90 hover:border-brand-300 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition duration-200 cursor-pointer group hover:-translate-y-0.5"
+              >
+                {/* Header: Nama RW & Persentase */}
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900 text-sm group-hover:text-brand-700 transition">
+                    {item.rwCode}
+                  </span>
+                  <span className="text-sm font-extrabold text-emerald-600">
+                    {item.percentage}%
+                  </span>
+                </div>
+
+                {/* Progress Bar Horizontal */}
+                <div className="w-full bg-slate-100 rounded-full h-2 my-2.5 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      isFull
+                        ? 'bg-emerald-500'
+                        : hasProgress
+                        ? 'bg-emerald-500'
+                        : 'bg-slate-200'
+                    }`}
+                    style={{ width: `${item.percentage}%` }}
+                  />
+                </div>
+
+                {/* Footer: X/Y bayar & Total Rupiah */}
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400 font-medium text-[11px]">
+                    {item.paidCount}/{item.totalBills} bayar
+                  </span>
+                  <span className="font-medium text-slate-500 font-mono text-[11px]">
+                    Rp {item.paidAmount.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
