@@ -1950,9 +1950,28 @@ class DataService {
     });
   }
 
-  // Reset database to initial seed for testing
+  // Smart Reset: Kembalikan data simulasi transaksi & pelanggan ke awal,
+  // tetapi TETAP PERTAHANKAN konfigurasi BUMDes (Profil, Rekening Bank, QRIS, Medsos, dan Sesi Login)
   public resetToDefaultSeed() {
+    // Amankan data konfigurasi penting organisasi yang ingin dipertahankan
+    const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    const savedBankAccounts = localStorage.getItem(STORAGE_KEYS.BANK_ACCOUNTS);
+    const savedOrgLinks = localStorage.getItem(STORAGE_KEYS.ORG_LINKS);
+    const savedAuthUser = localStorage.getItem('resik_auth_user');
+    const savedSupabaseUrl = localStorage.getItem('resik_supabase_url');
+    const savedSupabaseKey = localStorage.getItem('resik_supabase_anon_key');
+
+    // Bersihkan seluruh data lokal (pelanggan, tagihan, pembayaran, kwitansi, pendaftaran, audit log, template)
     localStorage.clear();
+
+    // Pulihkan kembali data konfigurasi organisasi yang dipertahankan
+    if (savedSettings) localStorage.setItem(STORAGE_KEYS.SETTINGS, savedSettings);
+    if (savedBankAccounts) localStorage.setItem(STORAGE_KEYS.BANK_ACCOUNTS, savedBankAccounts);
+    if (savedOrgLinks) localStorage.setItem(STORAGE_KEYS.ORG_LINKS, savedOrgLinks);
+    if (savedAuthUser) localStorage.setItem('resik_auth_user', savedAuthUser);
+    if (savedSupabaseUrl) localStorage.setItem('resik_supabase_url', savedSupabaseUrl);
+    if (savedSupabaseKey) localStorage.setItem('resik_supabase_anon_key', savedSupabaseKey);
+
     window.location.reload();
   }
 }

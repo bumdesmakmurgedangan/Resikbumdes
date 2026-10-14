@@ -9,7 +9,7 @@ import {
   Settings, Building2, Globe, CreditCard, QrCode, MapPin,
   Tag, Calendar, MessageSquare, Users, Shield, Plus,
   Edit2, Trash2, Check, X, Database, RefreshCw, Upload, Image,
-  CheckCircle2, RotateCcw, Smartphone, Sparkles
+  CheckCircle2, RotateCcw, Smartphone, Sparkles, AlertTriangle, AlertCircle, Lock
 } from 'lucide-react';
 import { saveSupabaseConfig, clearSupabaseConfig, getSupabaseConfig } from '../lib/supabase';
 import { SocialBrandIcon, getSocialBadgeStyle } from '../components/common/SocialBrandIcon';
@@ -85,6 +85,10 @@ export const SettingsView: React.FC = () => {
     role: 'PETUGAS',
     status: 'ACTIVE'
   });
+
+  // Safety Lock Reset modal state
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetConfirmationInput, setResetConfirmationInput] = useState('');
 
   // Category & Tariff modal state
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -1461,21 +1465,67 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
 
+          {/* Mode Demo / Simulasi Akun & Login Cepat */}
+          <div className="pt-5 border-t border-slate-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800">Mode Simulasi &amp; Login Cepat</h3>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    settings.isDemoMode !== false ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  }`}>
+                    {settings.isDemoMode !== false ? 'MODE TESTING AKTIF' : 'SIAP LAUNCHING / LIVE'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1 max-w-xl leading-relaxed">
+                  Saat aktif, tombol <strong>&quot;Simulasi Akun&quot;</strong> di navbar atas dan tombol <strong>&quot;Login Cepat&quot;</strong> di halaman login ditampilkan untuk mempermudah evaluasi internal. Nonaktifkan saklar ini saat aplikasi resmi diluncurkan ke warga Gedangan agar tombol jalan pintas tersebut hilang otomatis.
+                </p>
+              </div>
+
+              {/* Toggle switch */}
+              <button
+                type="button"
+                onClick={() => {
+                  const newMode = settings.isDemoMode === false ? true : false;
+                  const updated = { ...settings, isDemoMode: newMode };
+                  setSettings(updated);
+                  dataService.updateSettings(updated, currentUser);
+                  setRefreshKey(prev => prev + 1);
+                }}
+                className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  settings.isDemoMode !== false ? 'bg-brand-600' : 'bg-slate-300'
+                }`}
+                title="Klik untuk mengaktifkan / menonaktifkan Mode Demo"
+              >
+                <span
+                  className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                    settings.isDemoMode !== false ? 'translate-x-7' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* Reset Database / Smart Seed */}
           <div className="pt-4 border-t border-slate-200">
-            <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider mb-2">Reset Data Simulasi</h3>
-            <p className="text-xs text-slate-500 mb-3">
-              Kembalikan seluruh data simulasi ke awal (Budi Santoso, tagihan, kwitansi, dan rekening default BUMDes Gedangan).
+            <div className="flex items-center gap-2 mb-1.5">
+              <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">Reset Data Simulasi (Smart Reset)</h3>
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                Profil BUMDes &amp; Rekening Aman
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mb-3.5 leading-relaxed">
+              Kembalikan data warga dan transaksi ke kondisi awal simulasi, <strong>tanpa menghapus</strong> profil BUMDes, rekening bank, QRIS, tautan media sosial, maupun sesi login yang telah Anda atur.
             </p>
             <button
               onClick={() => {
-                if (window.confirm('Reset seluruh data simulasi ke kondisi awal?')) {
-                  dataService.resetToDefaultSeed();
-                }
+                setResetConfirmationInput('');
+                setResetModalOpen(true);
               }}
-              className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition flex items-center gap-1.5"
+              className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer border border-rose-200 shadow-2xs"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Reset ke Seed Bawaan</span>
+              <span>Reset Data Simulasi</span>
             </button>
           </div>
         </div>
@@ -1838,6 +1888,77 @@ export const SettingsView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Barier Pengaman Reset (Safety Lock Modal) */}
+      {resetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-rose-200">
+            <div className="flex items-center gap-3 text-rose-600 mb-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="font-black text-base text-slate-900">Konfirmasi Pengaman Reset</h3>
+                <p className="text-[11px] text-slate-500">Pembersihan data transaksi &amp; pelanggan simulasi</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-2 mb-4">
+              <div className="flex items-center gap-2 text-emerald-700 font-semibold text-[11px]">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                <span>AMAN: Profil BUMDes, Rekening Bank, QRIS &amp; Medsos</span>
+              </div>
+              <div className="flex items-center gap-2 text-rose-700 font-semibold text-[11px]">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>KERESET: Data Pelanggan, Tagihan, Pembayaran &amp; Template WA</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs mb-4">
+              <label className="block text-slate-700 font-bold">
+                Ketik kata <span className="font-mono text-rose-600 font-black bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">RESET</span> di bawah ini untuk membuka kunci:
+              </label>
+              <input
+                type="text"
+                value={resetConfirmationInput}
+                onChange={(e) => setResetConfirmationInput(e.target.value)}
+                placeholder="Ketik: RESET"
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-mono text-sm tracking-wider uppercase text-center focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setResetModalOpen(false);
+                  setResetConfirmationInput('');
+                }}
+                className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-semibold text-xs hover:bg-slate-50 cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={resetConfirmationInput.trim().toUpperCase() !== 'RESET'}
+                onClick={() => {
+                  if (resetConfirmationInput.trim().toUpperCase() === 'RESET') {
+                    dataService.resetToDefaultSeed();
+                  }
+                }}
+                className={`px-5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                  resetConfirmationInput.trim().toUpperCase() === 'RESET'
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-md cursor-pointer'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Reset Sekarang</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

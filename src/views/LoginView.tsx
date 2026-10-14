@@ -233,36 +233,38 @@ export const LoginView: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Sample Customer Quick Fill for demo evaluation */}
-                <div className="pt-2 border-t border-slate-100 text-center">
-                  <span className="text-[11px] text-slate-400">Uji coba cepat login warga:</span>
-                  <div className="flex flex-wrap justify-center gap-1.5 mt-1.5">
-                    <button
-                      type="button"
-                      onClick={() => fillSampleCustomer('PLG-RW03-0025', '1234')}
-                      className="text-[11px] bg-slate-100 hover:bg-brand-100 hover:text-brand-800 text-slate-600 px-2.5 py-1 rounded-lg font-mono transition"
-                      title="Login pakai ID Pelanggan"
-                    >
-                      ID: PLG-RW03-0025
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fillSampleCustomer('081234567890', '1234')}
-                      className="text-[11px] bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-900 text-emerald-800 px-2.5 py-1 rounded-lg font-mono font-medium transition border border-emerald-200"
-                      title="Login pakai Nomor HP Budi"
-                    >
-                      No HP: 081234567890
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fillSampleCustomer('081398765432', '4321')}
-                      className="text-[11px] bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-900 text-emerald-800 px-2.5 py-1 rounded-lg font-mono font-medium transition border border-emerald-200"
-                      title="Login pakai Nomor HP Ibu Sri"
-                    >
-                      No HP: 081398765432
-                    </button>
+                {/* Sample Customer Quick Fill for demo evaluation (Controlled by isDemoMode) */}
+                {settings.isDemoMode !== false && (
+                  <div className="pt-2 border-t border-slate-100 text-center">
+                    <span className="text-[11px] text-slate-400">Uji coba cepat login warga:</span>
+                    <div className="flex flex-wrap justify-center gap-1.5 mt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => fillSampleCustomer('PLG-RW03-0025', '1234')}
+                        className="text-[11px] bg-slate-100 hover:bg-brand-100 hover:text-brand-800 text-slate-600 px-2.5 py-1 rounded-lg font-mono transition"
+                        title="Login pakai ID Pelanggan"
+                      >
+                        ID: PLG-RW03-0025
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fillSampleCustomer('081234567890', '1234')}
+                        className="text-[11px] bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-900 text-emerald-800 px-2.5 py-1 rounded-lg font-mono font-medium transition border border-emerald-200"
+                        title="Login pakai Nomor HP Budi"
+                      >
+                        No HP: 081234567890
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fillSampleCustomer('081398765432', '4321')}
+                        className="text-[11px] bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-900 text-emerald-800 px-2.5 py-1 rounded-lg font-mono font-medium transition border border-emerald-200"
+                        title="Login pakai Nomor HP Ibu Sri"
+                      >
+                        No HP: 081398765432
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </form>
             ) : (
               /* ================= STAFF LOGIN FORM ================= */
@@ -313,33 +315,35 @@ export const LoginView: React.FC = () => {
                   <span>{loading ? 'Masuk...' : 'MASUK SEBAGAI PENGELOLA'}</span>
                 </button>
 
-                {/* Staff Quick Fill for demo evaluation */}
-                <div className="pt-2 border-t border-slate-100 text-center">
-                  <span className="text-[11px] text-slate-400">Pilih akun pengujian:</span>
-                  <div className="flex flex-wrap justify-center gap-2 mt-1.5">
-                    <button
-                      type="button"
-                      onClick={() => fillSampleStaff('superadmin@bumdes.id', 'superadmin123')}
-                      className="text-[11px] bg-purple-50 text-purple-700 hover:bg-purple-100 px-2.5 py-1 rounded-lg font-medium transition"
-                    >
-                      Super Admin
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fillSampleStaff('admin@bumdes.id', 'admin123')}
-                      className="text-[11px] bg-blue-50 text-blue-700 hover:bg-blue-100 px-2.5 py-1 rounded-lg font-medium transition"
-                    >
-                      Admin
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fillSampleStaff('petugas@bumdes.id', 'petugas123')}
-                      className="text-[11px] bg-amber-50 text-amber-700 hover:bg-amber-100 px-2.5 py-1 rounded-lg font-medium transition"
-                    >
-                      Petugas
-                    </button>
+                {/* Staff Quick Fill for demo evaluation (Controlled by isDemoMode) */}
+                {settings.isDemoMode !== false && (
+                  <div className="pt-2 border-t border-slate-100 text-center">
+                    <span className="text-[11px] text-slate-400">Pilih akun pengujian:</span>
+                    <div className="flex flex-wrap justify-center gap-2 mt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => fillSampleStaff('superadmin@bumdes.id', 'superadmin123')}
+                        className="text-[11px] bg-purple-50 text-purple-700 hover:bg-purple-100 px-2.5 py-1 rounded-lg font-medium transition"
+                      >
+                        Super Admin
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fillSampleStaff('admin@bumdes.id', 'admin123')}
+                        className="text-[11px] bg-blue-50 text-blue-700 hover:bg-blue-100 px-2.5 py-1 rounded-lg font-medium transition"
+                      >
+                        Admin
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fillSampleStaff('petugas@bumdes.id', 'petugas123')}
+                        className="text-[11px] bg-amber-50 text-amber-700 hover:bg-amber-100 px-2.5 py-1 rounded-lg font-medium transition"
+                      >
+                        Petugas
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </form>
             )}
 

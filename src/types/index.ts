@@ -271,6 +271,9 @@ export interface SystemSettings {
   qrisDescription: string;
   isQrisActive: boolean;
 
+  // Mode Demo / Simulasi Akun & Login Cepat (Bisa dinonaktifkan saat Go-Live Launching)
+  isDemoMode?: boolean;
+
   // Konfigurasi Kop Surat & Pejabat Penandatangan Laporan Cetak (Anti-Hardcode)
   kopParentInstitution?: string;
   kopUnitName?: string;

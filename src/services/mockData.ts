@@ -19,6 +19,7 @@ export const INITIAL_SYSTEM_SETTINGS: SystemSettings = {
   qrisImageUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=00020101021226580014ID.LINKAJA.WWW011893600914300000000151440014ID.CO.QRIS.WWW0215ID10200212345670303UMI5204549953033605802ID5922BUMDES+MAKMUR+GEDANGAN6008SIDOARJO61056125462070703A0163041A2B',
   qrisDescription: 'Scan QRIS RESIK BUMDes Makmur Gedangan melalui BCA Mobile, BRImo, Mandiri Livin, BNI, Dana, OVO, GoPay, ShopeePay, atau LinkAja.',
   isQrisActive: true,
+  isDemoMode: true,
 
   // Kop Surat & Pejabat Penandatangan Laporan Cetak
   kopParentInstitution: 'PEMERINTAH KABUPATEN SIDOARJO • KECAMATAN GEDANGAN',
