@@ -9,7 +9,7 @@ import {
 
 interface SidebarProps {
   activeTab: string;
-  setActiveTab: (tab: string) => void;
+  setActiveTab: (tab: string, param?: string) => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -30,7 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const pendingRegistrationsCount = dataService.getPendingCustomerRegistrationsCount();
 
   const handleSelectTab = (tab: string) => {
-    setActiveTab(tab);
+    setActiveTab(tab, 'ALL');
     onClose();
   };
 

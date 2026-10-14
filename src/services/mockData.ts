@@ -601,6 +601,18 @@ export const INITIAL_BILLS: Bill[] = [
     createdAt: '2026-10-01T00:00:00Z',
     updatedAt: '2026-10-08T14:30:00Z'
   },
+  // Sri Wahyuni - September Overdue
+  {
+    id: 'bill-8',
+    serviceId: 'srv-3',
+    billingYear: 2026,
+    billingMonth: 9,
+    amount: 20000,
+    dueDate: '2026-09-10',
+    status: 'OVERDUE',
+    createdAt: '2026-09-01T00:00:00Z',
+    updatedAt: '2026-09-11T00:00:00Z'
+  },
   // Joko Widodo - Paid
   {
     id: 'bill-5',

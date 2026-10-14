@@ -24,20 +24,55 @@ const formatShortMonth = (monthStr: string) => {
     .replace('Desember', 'Des');
 };
 
-export const OverdueView: React.FC = () => {
+interface OverdueViewProps {
+  initialRw?: string;
+}
+
+const normalizeRwNum = (str?: string | null): number | null => {
+  if (!str) return null;
+  const digits = str.replace(/\D/g, '');
+  return digits ? parseInt(digits, 10) : null;
+};
+
+const isMatchingRw = (targetRw: string, candidate?: string | null): boolean => {
+  if (!candidate) return false;
+  const targetNum = normalizeRwNum(targetRw);
+  const candNum = normalizeRwNum(candidate);
+  if (targetNum !== null && candNum !== null) {
+    return targetNum === candNum;
+  }
+  return candidate.trim().toUpperCase() === targetRw.trim().toUpperCase();
+};
+
+export const OverdueView: React.FC<OverdueViewProps> = ({ initialRw }) => {
   const { currentUser } = useAuth();
   if (!currentUser) return null;
 
   const [refreshKey, setRefreshKey] = useState(0);
   const overdueItems = dataService.getOverdueCustomers();
   const regions = dataService.getRegions();
-  const uniqueRWs: string[] = Array.from(new Set(regions.map(r => r.rwCode))).sort();
+  let uniqueRWs: string[] = Array.from(
+    new Set(regions.filter(r => r.status === 'ACTIVE').map(r => r.rwCode))
+  ).sort();
+  if (uniqueRWs.length === 0) {
+    uniqueRWs = ['RW 01', 'RW 02', 'RW 03', 'RW 04', 'RW 05', 'RW 06', 'RW 07'];
+  }
+  if (initialRw && initialRw !== 'ALL' && !uniqueRWs.includes(initialRw)) {
+    uniqueRWs = [initialRw, ...uniqueRWs].sort();
+  }
 
   // Filter States (PRD Section 51)
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterRW, setFilterRW] = useState('ALL');
+  const [filterRW, setFilterRW] = useState<string>(initialRw && initialRw !== 'ALL' ? initialRw : 'ALL');
   const [filterWhatsApp, setFilterWhatsApp] = useState<'ALL' | 'WITH_WA' | 'NO_WA'>('ALL');
   const [filterReminder, setFilterReminder] = useState<'ALL' | 'REMINDED' | 'NOT_REMINDED'>('ALL');
+
+  // React to prop changes (e.g. clicking different RW cards from dashboard)
+  React.useEffect(() => {
+    if (initialRw) {
+      setFilterRW(initialRw);
+    }
+  }, [initialRw]);
 
   // Bulk selection state (PRD Section 50)
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
@@ -65,11 +100,29 @@ export const OverdueView: React.FC = () => {
 
     // Filter RW
     if (filterRW !== 'ALL') {
-      const match = item.bills.some(b => {
+      const matchBillService = item.bills.some(b => {
         const srv = dataService.getServiceLocations().find(s => s.id === b.serviceId);
-        return srv?.rw === filterRW;
+        return srv && isMatchingRw(filterRW, srv.rw);
       });
-      if (!match) return false;
+
+      const matchCustomerServices = dataService.getServiceLocations(item.customer.id).some(srv => {
+        return isMatchingRw(filterRW, srv.rw);
+      });
+
+      const matchCustomerCode = isMatchingRw(filterRW, item.customer.customerCode);
+
+      const targetNum = normalizeRwNum(filterRW);
+      const matchAddress = targetNum !== null && (
+        item.customer.address.toUpperCase().includes(`RW ${String(targetNum).padStart(2, '0')}`) ||
+        item.customer.address.toUpperCase().includes(`RW 0${targetNum}`) ||
+        item.customer.address.toUpperCase().includes(`RW ${targetNum}`) ||
+        item.customer.address.toUpperCase().includes(`RW${targetNum}`) ||
+        item.customer.address.toUpperCase().includes(`RW/${targetNum}`)
+      );
+
+      if (!matchBillService && !matchCustomerServices && !matchCustomerCode && !matchAddress) {
+        return false;
+      }
     }
 
     // Filter WhatsApp
@@ -91,12 +144,12 @@ export const OverdueView: React.FC = () => {
     return true;
   });
 
-  // Calculate statistics (PRD Section 52)
-  const totalOverdueCustomers = overdueItems.length;
-  const totalOverdueAmount = overdueItems.reduce((acc, curr) => acc + curr.totalAmount, 0);
-  const alreadyOpenedCount = overdueItems.filter(o => Boolean(o.customer.lastRemindedAt)).length;
+  // Calculate statistics (PRD Section 52) based on filtered view
+  const totalOverdueCustomers = filteredList.length;
+  const totalOverdueAmount = filteredList.reduce((acc, curr) => acc + curr.totalAmount, 0);
+  const alreadyOpenedCount = filteredList.filter(o => Boolean(o.customer.lastRemindedAt)).length;
   const notRemindedCount = totalOverdueCustomers - alreadyOpenedCount;
-  const hasPhoneCount = overdueItems.filter(o => Boolean(o.customer.phone && o.customer.phone.trim().length > 0)).length;
+  const hasPhoneCount = filteredList.filter(o => Boolean(o.customer.phone && o.customer.phone.trim().length > 0)).length;
 
   // Selected items with valid WhatsApp phone
   const selectedWithPhoneItems = overdueItems.filter(
@@ -299,7 +352,11 @@ export const OverdueView: React.FC = () => {
           <select
             value={filterRW}
             onChange={(e) => setFilterRW(e.target.value)}
-            className="px-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-700 focus:ring-1 focus:ring-brand-500"
+            className={`px-3 py-2 border rounded-xl text-xs font-semibold focus:ring-1 focus:ring-brand-500 transition ${
+              filterRW !== 'ALL'
+                ? 'border-brand-500 bg-brand-50/60 text-brand-900 ring-1 ring-brand-500 font-bold'
+                : 'border-slate-200 text-slate-700'
+            }`}
           >
             <option value="ALL">Semua RW</option>
             {uniqueRWs.map(rw => (
@@ -329,6 +386,27 @@ export const OverdueView: React.FC = () => {
             <option value="NOT_REMINDED">Belum Pernah Diingatkan</option>
           </select>
         </div>
+
+        {/* Active RW Filter Banner */}
+        {filterRW !== 'ALL' && (
+          <div className="flex items-center justify-between p-2.5 px-3.5 bg-brand-50 border border-brand-200 rounded-xl text-xs text-brand-900 animate-fadeIn">
+            <div className="flex items-center gap-2">
+              <span className="font-bold">Filter Wilayah Aktif:</span>
+              <span className="bg-brand-600 text-white font-extrabold px-2.5 py-0.5 rounded-full text-[11px] shadow-2xs">
+                {filterRW}
+              </span>
+              <span className="text-slate-500 text-[11px]">
+                ({filteredList.length} warga menunggak)
+              </span>
+            </div>
+            <button
+              onClick={() => setFilterRW('ALL')}
+              className="text-[11px] font-bold text-brand-700 hover:text-brand-900 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>✕ Tampilkan Semua Wilayah</span>
+            </button>
+          </div>
+        )}
 
         {/* Bulk Actions Bar (Follow-up for checklist) */}
         {selectedCustomerIds.length > 0 && (
@@ -429,7 +507,26 @@ export const OverdueView: React.FC = () => {
               {filteredList.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
-                    Tidak ada data tunggakan yang sesuai dengan filter.
+                    <div>
+                      {filterRW !== 'ALL' ? (
+                        <div className="max-w-md mx-auto space-y-2 py-4">
+                          <p className="font-bold text-slate-700 text-sm">
+                            Tidak ada data tunggakan untuk wilayah <span className="text-brand-600 font-extrabold">{filterRW}</span>
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            Semua warga di wilayah {filterRW} telah melunasi iuran atau belum ada tagihan yang jatuh tempo.
+                          </p>
+                          <button
+                            onClick={() => setFilterRW('ALL')}
+                            className="mt-2 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition shadow-2xs inline-block"
+                          >
+                            Tampilkan Semua RW ({overdueItems.length} Menunggak)
+                          </button>
+                        </div>
+                      ) : (
+                        <span>Tidak ada data tunggakan yang sesuai dengan filter.</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (

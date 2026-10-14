@@ -19,6 +19,7 @@ import { AuditLogsView } from './views/AuditLogsView';
 const MainLayout: React.FC = () => {
   const { isAuthenticated, isCustomer, isStaff } = useAuth();
   const [activeTab, setActiveTab] = useState<string>(isCustomer ? 'customer-dashboard' : 'dashboard');
+  const [overdueFilterRw, setOverdueFilterRw] = useState<string | undefined>(undefined);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Sync active tab when user switches role
@@ -30,6 +31,13 @@ const MainLayout: React.FC = () => {
     }
   }, [isCustomer, isStaff]);
 
+  const handleNavigateTab = (tab: string, param?: string) => {
+    if (tab === 'overdue') {
+      setOverdueFilterRw(param || 'ALL');
+    }
+    setActiveTab(tab);
+  };
+
   // If not logged in, render the login page
   if (!isAuthenticated) {
     return <LoginView />;
@@ -40,7 +48,7 @@ const MainLayout: React.FC = () => {
       return (
         <CustomerDashboardView
           activeTab={activeTab}
-          onNavigateTab={setActiveTab}
+          onNavigateTab={handleNavigateTab}
         />
       );
     }
@@ -48,11 +56,11 @@ const MainLayout: React.FC = () => {
     // Staff Views
     switch (activeTab) {
       case 'dashboard':
-        return <AdminDashboardView onNavigateTab={setActiveTab} />;
+        return <AdminDashboardView onNavigateTab={handleNavigateTab} />;
       case 'verification':
         return <VerificationView />;
       case 'overdue':
-        return <OverdueView />;
+        return <OverdueView initialRw={overdueFilterRw} />;
       case 'customers':
         return <CustomersView />;
       case 'cash-payment':
@@ -70,7 +78,7 @@ const MainLayout: React.FC = () => {
       case 'audit-logs':
         return <AuditLogsView />;
       default:
-        return <AdminDashboardView onNavigateTab={setActiveTab} />;
+        return <AdminDashboardView onNavigateTab={handleNavigateTab} />;
     }
   };
 
@@ -79,13 +87,13 @@ const MainLayout: React.FC = () => {
       <Navbar
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        onNavigateTab={setActiveTab}
+        onNavigateTab={handleNavigateTab}
       />
 
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         <Sidebar
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleNavigateTab}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />

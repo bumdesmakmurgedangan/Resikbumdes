@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 interface AdminDashboardViewProps {
-  onNavigateTab: (tab: string) => void;
+  onNavigateTab: (tab: string, param?: string) => void;
 }
 
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onNavigateTab }) => {
@@ -154,13 +154,22 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onNaviga
         </div>
 
         {/* Pelanggan Menunggak */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs">
+        <div
+          onClick={() => onNavigateTab('overdue', 'ALL')}
+          className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 hover:border-red-300 shadow-xs cursor-pointer transition group"
+          title="Klik untuk membuka semua data tunggakan"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Pelanggan Menunggak</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-red-700 transition">Pelanggan Menunggak</span>
             <AlertTriangle className="w-4 h-4 text-red-500" />
           </div>
           <div className="text-2xl font-black text-red-600">{stats.totalOverdueCustomers}</div>
-          <div className="text-[11px] text-slate-400 mt-1">Lewat jatuh tempo</div>
+          <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+            <span>Lewat jatuh tempo</span>
+            <span className="text-red-600 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
+              Lihat &rarr;
+            </span>
+          </div>
         </div>
 
         {/* Total Nominal Tunggakan */}
@@ -212,9 +221,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onNaviga
             return (
               <div
                 key={item.rwCode}
-                onClick={() => onNavigateTab('overdue')}
-                title={`Klik untuk melihat rincian ${item.rwCode}`}
-                className="bg-white border border-slate-200/90 hover:border-brand-300 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition duration-200 cursor-pointer group hover:-translate-y-0.5"
+                onClick={() => onNavigateTab('overdue', item.rwCode)}
+                title={`Klik untuk melihat rincian tunggakan ${item.rwCode}`}
+                className="bg-white border border-slate-200/90 hover:border-brand-400 hover:ring-2 hover:ring-brand-100 rounded-2xl p-4 shadow-2xs hover:shadow-sm transition-all duration-200 cursor-pointer group hover:-translate-y-0.5"
               >
                 {/* Header: Nama RW & Persentase */}
                 <div className="flex items-center justify-between">
@@ -249,6 +258,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onNaviga
                     Rp {item.paidAmount.toLocaleString('id-ID')}
                   </span>
                 </div>
+
+                <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-brand-600 font-semibold group-hover:text-brand-700">
+                  <span>Lihat tunggakan</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition" />
+                </div>
               </div>
             );
           })}
@@ -265,8 +279,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onNaviga
             </p>
           </div>
           <button
-            onClick={() => onNavigateTab('overdue')}
-            className="text-xs font-bold text-brand-700 hover:text-brand-900 flex items-center gap-1 self-start sm:self-auto"
+            onClick={() => onNavigateTab('overdue', 'ALL')}
+            className="text-xs font-bold text-brand-700 hover:text-brand-900 flex items-center gap-1 self-start sm:self-auto cursor-pointer"
           >
             <span>Buka Semua Tunggakan ({stats.totalOverdueCustomers})</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
