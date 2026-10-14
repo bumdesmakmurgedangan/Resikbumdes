@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { dataService } from '../../services/dataService';
 import {
@@ -10,7 +10,7 @@ import {
 interface NavbarProps {
   onToggleSidebar: () => void;
   sidebarOpen: boolean;
-  onNavigateTab?: (tab: string) => void;
+  onNavigateTab?: (tab: string, param?: string) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, sidebarOpen, onNavigateTab }) => {
@@ -18,6 +18,37 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, sidebarOpen, on
   const settings = dataService.getSettings();
   const [showDemoSwitcher, setShowDemoSwitcher] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const demoSwitcherRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (notificationRef.current && !notificationRef.current.contains(target)) {
+        setShowNotifications(false);
+      }
+      if (demoSwitcherRef.current && !demoSwitcherRef.current.contains(target)) {
+        setShowDemoSwitcher(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowNotifications(false);
+        setShowDemoSwitcher(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const pendingRegCount = isStaff ? dataService.getPendingCustomerRegistrationsCount() : 0;
   const pendingPayCount = isStaff ? dataService.getPayments({ status: 'PENDING' }).length : 0;
@@ -85,13 +116,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, sidebarOpen, on
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Staff Notification Bell (Pendaftaran Baru & Verifikasi Pembayaran) */}
           {isStaff && (
-            <div className="relative">
+            <div className="relative" ref={notificationRef}>
               <button
                 onClick={() => {
-                  setShowNotifications(!showNotifications);
+                  setShowNotifications(prev => !prev);
                   setShowDemoSwitcher(false);
                 }}
-                className={`relative p-2 rounded-xl transition border ${
+                className={`relative p-2 rounded-xl transition border cursor-pointer ${
                   totalNotifications > 0
                     ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
                     : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
@@ -187,10 +218,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, sidebarOpen, on
 
           {/* Demo Quick Role Switcher Button (Controlled by isDemoMode) */}
           {settings.isDemoMode !== false && (
-            <div className="relative">
+            <div className="relative" ref={demoSwitcherRef}>
               <button
-                onClick={() => setShowDemoSwitcher(!showDemoSwitcher)}
-                className="hidden lg:flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition border border-slate-200"
+                onClick={() => {
+                  setShowDemoSwitcher(prev => !prev);
+                  setShowNotifications(false);
+                }}
+                className="hidden lg:flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition border border-slate-200 cursor-pointer"
                 title="Ganti akun untuk pengujian PRD"
               >
                 <RefreshCw className="w-3.5 h-3.5 text-brand-600" />
