@@ -1950,24 +1950,46 @@ class DataService {
     });
   }
 
-  // Smart Reset: Kembalikan data simulasi transaksi & pelanggan ke awal,
-  // tetapi TETAP PERTAHANKAN konfigurasi BUMDes (Profil, Rekening Bank, QRIS, Medsos, dan Sesi Login)
+  // Reset Data Transaksi & Pelanggan Menjadi Kosong Bersih (Siap Launching Warga Asli),
+  // dengan TETAP MEMPERTAHANKAN Profil BUMDes, Rekening Bank, QRIS, Medsos, Template WA, dan Sesi Login
   public resetToDefaultSeed() {
-    // Amankan data konfigurasi penting organisasi yang ingin dipertahankan
+    // 1. Amankan data konfigurasi penting organisasi yang ingin dipertahankan
     const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     const savedBankAccounts = localStorage.getItem(STORAGE_KEYS.BANK_ACCOUNTS);
     const savedOrgLinks = localStorage.getItem(STORAGE_KEYS.ORG_LINKS);
+    const savedTemplates = localStorage.getItem(STORAGE_KEYS.TEMPLATES); // Template WhatsApp TETAP DIPERTAHANKAN
+    const savedUsers = localStorage.getItem(STORAGE_KEYS.USERS);
+    const savedRoles = localStorage.getItem(STORAGE_KEYS.ROLES);
+    const savedRegions = localStorage.getItem(STORAGE_KEYS.REGIONS);
+    const savedCategories = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+    const savedTariffs = localStorage.getItem(STORAGE_KEYS.TARIFFS);
     const savedAuthUser = localStorage.getItem('resik_auth_user');
     const savedSupabaseUrl = localStorage.getItem('resik_supabase_url');
     const savedSupabaseKey = localStorage.getItem('resik_supabase_anon_key');
 
-    // Bersihkan seluruh data lokal (pelanggan, tagihan, pembayaran, kwitansi, pendaftaran, audit log, template)
+    // 2. Kosongkan seluruh penyimpanan lokal
     localStorage.clear();
 
-    // Pulihkan kembali data konfigurasi organisasi yang dipertahankan
-    if (savedSettings) localStorage.setItem(STORAGE_KEYS.SETTINGS, savedSettings);
-    if (savedBankAccounts) localStorage.setItem(STORAGE_KEYS.BANK_ACCOUNTS, savedBankAccounts);
-    if (savedOrgLinks) localStorage.setItem(STORAGE_KEYS.ORG_LINKS, savedOrgLinks);
+    // 3. Simpan state KOSONG untuk data pelanggan dan transaksi agar bersih dari dummy Budi Santoso dkk
+    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.BILLS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.BROADCASTS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.RECEIPT_SEQ, '0');
+
+    // 4. Pulihkan kembali konfigurasi organisasi, rekening, medsos, template WA, dan master data
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, savedSettings || JSON.stringify(this.settings));
+    localStorage.setItem(STORAGE_KEYS.BANK_ACCOUNTS, savedBankAccounts || JSON.stringify(this.bankAccounts));
+    localStorage.setItem(STORAGE_KEYS.ORG_LINKS, savedOrgLinks || JSON.stringify(this.orgLinks));
+    localStorage.setItem(STORAGE_KEYS.TEMPLATES, savedTemplates || JSON.stringify(this.templates));
+    localStorage.setItem(STORAGE_KEYS.USERS, savedUsers || JSON.stringify(this.users));
+    localStorage.setItem(STORAGE_KEYS.ROLES, savedRoles || JSON.stringify(this.roles));
+    localStorage.setItem(STORAGE_KEYS.REGIONS, savedRegions || JSON.stringify(this.regions));
+    localStorage.setItem(STORAGE_KEYS.CATEGORIES, savedCategories || JSON.stringify(this.categories));
+    localStorage.setItem(STORAGE_KEYS.TARIFFS, savedTariffs || JSON.stringify(this.tariffs));
     if (savedAuthUser) localStorage.setItem('resik_auth_user', savedAuthUser);
     if (savedSupabaseUrl) localStorage.setItem('resik_supabase_url', savedSupabaseUrl);
     if (savedSupabaseKey) localStorage.setItem('resik_supabase_anon_key', savedSupabaseKey);

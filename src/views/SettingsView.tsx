@@ -1509,13 +1509,13 @@ export const SettingsView: React.FC = () => {
           {/* Reset Database / Smart Seed */}
           <div className="pt-4 border-t border-slate-200">
             <div className="flex items-center gap-2 mb-1.5">
-              <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">Reset Data Simulasi (Smart Reset)</h3>
+              <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">Bersihkan Data Pelanggan &amp; Transaksi (Siap Pakai)</h3>
               <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
-                Profil BUMDes &amp; Rekening Aman
+                Profil BUMDes &amp; Template WA Aman
               </span>
             </div>
             <p className="text-xs text-slate-500 mb-3.5 leading-relaxed">
-              Kembalikan data warga dan transaksi ke kondisi awal simulasi, <strong>tanpa menghapus</strong> profil BUMDes, rekening bank, QRIS, tautan media sosial, maupun sesi login yang telah Anda atur.
+              Mengosongkan total seluruh data pelanggan contoh (Budi Santoso dkk), tagihan, dan riwayat transaksi menjadi 0 agar siap diinput data warga asli Desa Gedangan, <strong>tanpa menghapus</strong> profil BUMDes, rekening bank, QRIS, tautan media sosial, template pesan WhatsApp, maupun sesi login Anda.
             </p>
             <button
               onClick={() => {
@@ -1525,7 +1525,7 @@ export const SettingsView: React.FC = () => {
               className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer border border-rose-200 shadow-2xs"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Reset Data Simulasi</span>
+              <span>Bersihkan Data (Kosongkan Pelanggan)</span>
             </button>
           </div>
         </div>
@@ -1900,19 +1900,19 @@ export const SettingsView: React.FC = () => {
                 <AlertTriangle className="w-5 h-5 text-rose-600" />
               </div>
               <div>
-                <h3 className="font-black text-base text-slate-900">Konfirmasi Pengaman Reset</h3>
-                <p className="text-[11px] text-slate-500">Pembersihan data transaksi &amp; pelanggan simulasi</p>
+                <h3 className="font-black text-base text-slate-900">Konfirmasi Bersihkan Data Pelanggan</h3>
+                <p className="text-[11px] text-slate-500">Pengosongan seluruh data warga contoh untuk persiapan data riil</p>
               </div>
             </div>
 
             <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-2 mb-4">
               <div className="flex items-center gap-2 text-emerald-700 font-semibold text-[11px]">
                 <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                <span>AMAN: Profil BUMDes, Rekening Bank, QRIS &amp; Medsos</span>
+                <span>AMAN: Profil BUMDes, Rekening Bank, QRIS, Medsos &amp; Template WA</span>
               </div>
               <div className="flex items-center gap-2 text-rose-700 font-semibold text-[11px]">
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-                <span>KERESET: Data Pelanggan, Tagihan, Pembayaran &amp; Template WA</span>
+                <span>DIKOSONGKAN TOTAL: Data Pelanggan (Budi Santoso dkk), Tagihan &amp; Transaksi (0 Data)</span>
               </div>
             </div>
 
@@ -1956,7 +1956,7 @@ export const SettingsView: React.FC = () => {
                 }`}
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Reset Sekarang</span>
+                <span>Bersihkan &amp; Kosongkan Sekarang</span>
               </button>
             </div>
           </div>
