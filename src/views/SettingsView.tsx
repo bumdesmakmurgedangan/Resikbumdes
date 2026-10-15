@@ -312,10 +312,10 @@ export const SettingsView: React.FC = () => {
                   <span className="text-[11px] text-slate-400 font-normal">Tampil di login &amp; kop</span>
                 </div>
                 <input
-                  type="url"
+                  type="text"
                   value={settings.logoUrl}
                   onChange={(e) => setSettings({ ...settings, logoUrl: e.target.value })}
-                  placeholder="https://..."
+                  placeholder="/logo.webp atau https://..."
                   className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-xs bg-white"
                 />
                 

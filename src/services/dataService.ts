@@ -64,6 +64,14 @@ class DataService {
     if (!this.settings.website || this.settings.website === 'https://bumdesmakmurgedangan.my.id') {
       this.settings.website = 'https://www.bumdesmakmurgedangan.my.id';
     }
+    if (!this.settings.logoUrl || this.settings.logoUrl.includes('ibb.co') || this.settings.logoUrl.includes('imgbb')) {
+      this.settings.logoUrl = '/logo.webp';
+      this.save(STORAGE_KEYS.SETTINGS, this.settings);
+    }
+    if (!this.settings.faviconUrl || this.settings.faviconUrl.includes('ibb.co') || this.settings.faviconUrl.includes('imgbb')) {
+      this.settings.faviconUrl = '/logo.webp';
+      this.save(STORAGE_KEYS.SETTINGS, this.settings);
+    }
     this.users = this.load(STORAGE_KEYS.USERS, INITIAL_USERS);
     this.roles = this.load(STORAGE_KEYS.ROLES, INITIAL_ROLES);
     this.permissions = INITIAL_PERMISSIONS;

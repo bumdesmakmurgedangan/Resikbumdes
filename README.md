@@ -4,7 +4,7 @@
 > **"Iuran Mudah, Lingkungan Bersih."**
 > *"Sederhana untuk warga, lengkap untuk BUMDes."*
 
-![Logo RESIK](https://i.ibb.co.com/nNnkDbWh/Logo-Resik-dengan-R-Terbuka.webp)
+![Logo RESIK](/logo.webp)
 
 RESIK adalah platform **Responsive Web App (Mobile-First)** terintegrasi untuk digitalisasi pengelolaan retribusi persampahan warga di lingkungan Desa Gedangan, Sidoarjo. Dirancang untuk menggantikan kartu pelanggan manual yang mudah hilang/rusak dengan sistem kartu digital dan pencatatan transaksi terpusat.
 
