@@ -2184,7 +2184,17 @@ class DataService {
         return;
       }
 
-      // Supabase memiliki data! Terapkan (hydrate) ke memori lokal
+      // Jika data lokal memiliki lebih banyak pelanggan (misal 279 warga hasil import di laptop vs hanya 5 di cloud),
+      // dahulukan data lokal dan sinkronkan ke cloud agar data import tidak tertimpa!
+      const cloudCustRow = data.find((r: any) => r.key === STORAGE_KEYS.CUSTOMERS);
+      const cloudCustCount = (cloudCustRow && Array.isArray(cloudCustRow.data)) ? cloudCustRow.data.length : 0;
+      if (this.customers.length > cloudCustCount) {
+        console.log(`Local memiliki ${this.customers.length} pelanggan vs Cloud ${cloudCustCount}. Mengunggah data lokal ke cloud...`);
+        await this.pushAllToCloud();
+        return;
+      }
+
+      // Supabase memiliki data lengkap! Terapkan (hydrate) ke memori lokal
       this.hydrateFromCloudData(data);
       this.cloudStatus = 'CONNECTED';
       this.cloudErrorMsg = null;
