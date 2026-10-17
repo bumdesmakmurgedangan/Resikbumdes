@@ -15,6 +15,7 @@ import {
 } from './mockData';
 import * as XLSX from 'xlsx';
 import { parseGoogleMapsLocation } from '../utils/geoUtils';
+import { supabase, getSupabaseConfig } from '../lib/supabase';
 
 const STORAGE_KEYS = {
   SETTINGS: 'resik_settings',
@@ -55,6 +56,14 @@ class DataService {
   private auditLogs: AuditLog[];
   private receiptSeq: number;
   private registrations: CustomerRegistration[];
+
+  // Supabase Cloud Sync Engine properties
+  private isCloudSyncing = false;
+  private cloudStatus: 'IDLE' | 'SYNCING' | 'CONNECTED' | 'ERROR' = 'IDLE';
+  private cloudErrorMsg: string | null = null;
+  private lastCloudSyncAt: string | null = null;
+  private syncListeners: (() => void)[] = [];
+  private saveDebounceTimers: Record<string, any> = {};
 
   constructor() {
     this.settings = this.load(STORAGE_KEYS.SETTINGS, INITIAL_SYSTEM_SETTINGS);
@@ -174,6 +183,9 @@ class DataService {
 
     // Apply favicon dynamically to browser tab
     this.applyFavicon();
+
+    // Inisialisasi sinkronisasi cloud Supabase secara asinkron
+    this.initCloudSync();
   }
 
   private load<T>(key: string, defaultValue: T): T {
@@ -194,6 +206,8 @@ class DataService {
     } catch (e) {
       console.error(`Failed to save ${key} to storage:`, e);
     }
+    // Sinkronkan ke Supabase Cloud di latar belakang (debounced)
+    this.pushKeyToCloudDebounced(key, value);
   }
 
   // Automatic overdue detection according to PRD section 39 & 116
@@ -2017,6 +2031,367 @@ class DataService {
 
     window.location.reload();
   }
+
+  // ----------------------------------------------------
+  // RESET TRANSAKSI SAJA (Sesuai Permintaan Pengguna)
+  // Menghapus hanya transaksi (tagihan, pembayaran, kuitansi)
+  // TETAP MEMPERTAHANKAN 100%: Data 279 Pelanggan & Objek Layanan, Profil BUMDes,
+  // Rekening Bank, QRIS, Sosmed, Template WA, Master Wilayah, Kategori, Tarif, dan User
+  // ----------------------------------------------------
+  public resetTransactionsOnly(actorUser: User) {
+    const previousBillsCount = this.bills.length;
+    const previousPaymentsCount = this.payments.length;
+
+    // 1. Kosongkan tagihan dan pembayaran
+    this.bills = [];
+    this.payments = [];
+    this.receiptSeq = 0;
+
+    // 2. Simpan lokal
+    this.save(STORAGE_KEYS.BILLS, []);
+    this.save(STORAGE_KEYS.PAYMENTS, []);
+    this.save(STORAGE_KEYS.RECEIPT_SEQ, 0);
+
+    // 3. Catat audit log
+    this.logAudit(
+      actorUser.id,
+      actorUser.fullName,
+      'RESET_TRANSACTIONS_ONLY',
+      'BILLING_TRANSACTIONS',
+      undefined,
+      { billsCount: previousBillsCount, paymentsCount: previousPaymentsCount },
+      { billsCount: 0, paymentsCount: 0, customersRetained: this.customers.length }
+    );
+
+    // 4. Sinkronkan pembaruan langsung ke Supabase
+    this.pushKeyToCloud(STORAGE_KEYS.BILLS, []);
+    this.pushKeyToCloud(STORAGE_KEYS.PAYMENTS, []);
+    this.pushKeyToCloud(STORAGE_KEYS.RECEIPT_SEQ, 0);
+    this.pushKeyToCloud(STORAGE_KEYS.AUDIT_LOGS, this.auditLogs);
+  }
+
+  // Terbitkan Tagihan Massal Baru untuk seluruh pelanggan aktif
+  public generateMonthlyBillsForAll(year?: number, month?: number, actorUser?: User): { created: number; skipped: number } {
+    const now = new Date();
+    const y = year || now.getFullYear();
+    const m = month || (now.getMonth() + 1);
+    let created = 0;
+    let skipped = 0;
+
+    this.services.forEach(service => {
+      if (service.status !== 'ACTIVE') return;
+      const existing = this.bills.find(b => b.serviceId === service.id && b.billingYear === y && b.billingMonth === m);
+      if (existing) {
+        skipped++;
+      } else {
+        const trf = this.tariffs.find(t => t.id === service.tariffId);
+        const amount = (service.customTariffAmount && service.customTariffAmount > 0)
+          ? service.customTariffAmount
+          : (trf ? trf.amount : 20000);
+        const dueDay = this.settings.defaultDueDay || 10;
+        const dueDate = `${y}-${String(m).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
+        const today = new Date().toISOString().split('T')[0];
+        const status: BillStatus = today > dueDate ? 'OVERDUE' : 'UNPAID';
+
+        this.bills.push({
+          id: 'bill-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+          serviceId: service.id,
+          billingYear: y,
+          billingMonth: m,
+          amount,
+          dueDate,
+          status,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString()
+        });
+        created++;
+      }
+    });
+
+    if (created > 0) {
+      this.save(STORAGE_KEYS.BILLS, this.bills);
+      if (actorUser) {
+        this.logAudit(actorUser.id, actorUser.fullName, 'GENERATE_BILLS_MASS', 'BILL', undefined, undefined, {
+          year: y,
+          month: m,
+          created,
+          skipped
+        });
+      }
+    }
+
+    return { created, skipped };
+  }
+
+  // ----------------------------------------------------
+  // SUPABASE CLOUD SYNC ENGINE
+  // ----------------------------------------------------
+  public subscribeSync(callback: () => void): () => void {
+    this.syncListeners.push(callback);
+    return () => {
+      this.syncListeners = this.syncListeners.filter(cb => cb !== callback);
+    };
+  }
+
+  private notifySyncListeners() {
+    this.syncListeners.forEach(cb => {
+      try { cb(); } catch (e) { console.error('Sync listener error:', e); }
+    });
+  }
+
+  public getCloudSyncStatus() {
+    return {
+      status: this.cloudStatus,
+      isSyncing: this.isCloudSyncing,
+      errorMsg: this.cloudErrorMsg,
+      lastSyncAt: this.lastCloudSyncAt
+    };
+  }
+
+  public async initCloudSync() {
+    const config = getSupabaseConfig();
+    if (!config.isConfigured) {
+      this.cloudStatus = 'IDLE';
+      return;
+    }
+
+    this.cloudStatus = 'SYNCING';
+    this.isCloudSyncing = true;
+    this.notifySyncListeners();
+
+    try {
+      const { data, error } = await supabase.from('resik_cloud_sync').select('*');
+      if (error) {
+        console.warn('Supabase cloud sync info:', error.message);
+        this.cloudStatus = 'ERROR';
+        this.cloudErrorMsg = error.message;
+        this.isCloudSyncing = false;
+        this.notifySyncListeners();
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        // Cloud masih kosong di Supabase. Jika perangkat ini sudah punya data (misal 279 pelanggan hasil import),
+        // otomatis unggah data lokal ke cloud!
+        if (this.customers && this.customers.length > 0) {
+          console.log(`Auto-pushing ${this.customers.length} local customers to Supabase Cloud...`);
+          await this.pushAllToCloud();
+        } else {
+          this.cloudStatus = 'CONNECTED';
+          this.isCloudSyncing = false;
+          this.notifySyncListeners();
+        }
+        return;
+      }
+
+      // Supabase memiliki data! Terapkan (hydrate) ke memori lokal
+      this.hydrateFromCloudData(data);
+      this.cloudStatus = 'CONNECTED';
+      this.cloudErrorMsg = null;
+      this.lastCloudSyncAt = new Date().toISOString();
+      this.isCloudSyncing = false;
+      this.notifySyncListeners();
+    } catch (err: any) {
+      console.warn('initCloudSync failed:', err);
+      this.cloudStatus = 'ERROR';
+      this.cloudErrorMsg = err.message || 'Gagal tersambung ke Supabase Cloud';
+      this.isCloudSyncing = false;
+      this.notifySyncListeners();
+    }
+  }
+
+  private hydrateFromCloudData(rows: any[]) {
+    rows.forEach(row => {
+      if (!row.key || row.data === undefined) return;
+      try {
+        localStorage.setItem(row.key, JSON.stringify(row.data));
+      } catch (e) {}
+
+      switch (row.key) {
+        case STORAGE_KEYS.CUSTOMERS:
+          if (Array.isArray(row.data)) this.customers = row.data;
+          break;
+        case STORAGE_KEYS.SERVICES:
+          if (Array.isArray(row.data)) this.services = row.data;
+          break;
+        case STORAGE_KEYS.BILLS:
+          if (Array.isArray(row.data)) this.bills = row.data;
+          break;
+        case STORAGE_KEYS.PAYMENTS:
+          if (Array.isArray(row.data)) this.payments = row.data;
+          break;
+        case STORAGE_KEYS.SETTINGS:
+          if (row.data) this.settings = row.data;
+          break;
+        case STORAGE_KEYS.BANK_ACCOUNTS:
+          if (Array.isArray(row.data)) this.bankAccounts = row.data;
+          break;
+        case STORAGE_KEYS.ORG_LINKS:
+          if (Array.isArray(row.data)) this.orgLinks = row.data;
+          break;
+        case STORAGE_KEYS.TEMPLATES:
+          if (Array.isArray(row.data)) this.templates = row.data;
+          break;
+        case STORAGE_KEYS.USERS:
+          if (Array.isArray(row.data)) this.users = row.data;
+          break;
+        case STORAGE_KEYS.ROLES:
+          if (Array.isArray(row.data)) this.roles = row.data;
+          break;
+        case STORAGE_KEYS.REGIONS:
+          if (Array.isArray(row.data)) this.regions = row.data;
+          break;
+        case STORAGE_KEYS.CATEGORIES:
+          if (Array.isArray(row.data)) this.categories = row.data;
+          break;
+        case STORAGE_KEYS.TARIFFS:
+          if (Array.isArray(row.data)) this.tariffs = row.data;
+          break;
+        case STORAGE_KEYS.REGISTRATIONS:
+          if (Array.isArray(row.data)) this.registrations = row.data;
+          break;
+        case STORAGE_KEYS.BROADCASTS:
+          if (Array.isArray(row.data)) this.broadcasts = row.data;
+          break;
+        case STORAGE_KEYS.AUDIT_LOGS:
+          if (Array.isArray(row.data)) this.auditLogs = row.data;
+          break;
+        case STORAGE_KEYS.RECEIPT_SEQ:
+          this.receiptSeq = Number(row.data) || 0;
+          break;
+      }
+    });
+  }
+
+  public pushKeyToCloudDebounced(key: string, value: any) {
+    if (this.saveDebounceTimers[key]) {
+      clearTimeout(this.saveDebounceTimers[key]);
+    }
+    this.saveDebounceTimers[key] = setTimeout(() => {
+      this.pushKeyToCloud(key, value);
+    }, 500);
+  }
+
+  public async pushKeyToCloud(key: string, value: any) {
+    try {
+      const config = getSupabaseConfig();
+      if (!config.isConfigured) return;
+
+      const { error } = await supabase.from('resik_cloud_sync').upsert({
+        key,
+        data: value,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' });
+
+      if (error) {
+        this.cloudStatus = 'ERROR';
+        this.cloudErrorMsg = error.message;
+      } else {
+        this.cloudStatus = 'CONNECTED';
+        this.cloudErrorMsg = null;
+        this.lastCloudSyncAt = new Date().toISOString();
+      }
+      this.notifySyncListeners();
+    } catch (err: any) {
+      console.warn(`pushKeyToCloud failed for ${key}:`, err);
+    }
+  }
+
+  public async pullFromCloud(): Promise<{ success: boolean; message: string; rowsCount?: number }> {
+    this.isCloudSyncing = true;
+    this.cloudStatus = 'SYNCING';
+    this.notifySyncListeners();
+
+    try {
+      const { data, error } = await supabase.from('resik_cloud_sync').select('*');
+      if (error) {
+        this.cloudStatus = 'ERROR';
+        this.cloudErrorMsg = error.message;
+        this.isCloudSyncing = false;
+        this.notifySyncListeners();
+        return { success: false, message: error.message };
+      }
+
+      if (!data || data.length === 0) {
+        this.cloudStatus = 'CONNECTED';
+        this.isCloudSyncing = false;
+        this.notifySyncListeners();
+        return { success: true, message: 'Cloud Supabase masih kosong.' };
+      }
+
+      this.hydrateFromCloudData(data);
+      this.cloudStatus = 'CONNECTED';
+      this.cloudErrorMsg = null;
+      this.lastCloudSyncAt = new Date().toISOString();
+      this.isCloudSyncing = false;
+      this.notifySyncListeners();
+      return {
+        success: true,
+        message: `Berhasil sinkron ${data.length} modul data dari Supabase Cloud!`,
+        rowsCount: data.length
+      };
+    } catch (err: any) {
+      this.cloudStatus = 'ERROR';
+      this.cloudErrorMsg = err.message || 'Gagal sinkron';
+      this.isCloudSyncing = false;
+      this.notifySyncListeners();
+      return { success: false, message: err.message };
+    }
+  }
+
+  public async pushAllToCloud(): Promise<{ success: boolean; message: string }> {
+    this.isCloudSyncing = true;
+    this.cloudStatus = 'SYNCING';
+    this.notifySyncListeners();
+
+    try {
+      const items = [
+        { key: STORAGE_KEYS.SETTINGS, data: this.settings },
+        { key: STORAGE_KEYS.USERS, data: this.users },
+        { key: STORAGE_KEYS.ROLES, data: this.roles },
+        { key: STORAGE_KEYS.CUSTOMERS, data: this.customers },
+        { key: STORAGE_KEYS.SERVICES, data: this.services },
+        { key: STORAGE_KEYS.BILLS, data: this.bills },
+        { key: STORAGE_KEYS.PAYMENTS, data: this.payments },
+        { key: STORAGE_KEYS.BANK_ACCOUNTS, data: this.bankAccounts },
+        { key: STORAGE_KEYS.REGISTRATIONS, data: this.registrations },
+        { key: STORAGE_KEYS.ORG_LINKS, data: this.orgLinks },
+        { key: STORAGE_KEYS.TEMPLATES, data: this.templates },
+        { key: STORAGE_KEYS.REGIONS, data: this.regions },
+        { key: STORAGE_KEYS.CATEGORIES, data: this.categories },
+        { key: STORAGE_KEYS.TARIFFS, data: this.tariffs },
+        { key: STORAGE_KEYS.BROADCASTS, data: this.broadcasts },
+        { key: STORAGE_KEYS.AUDIT_LOGS, data: this.auditLogs },
+        { key: STORAGE_KEYS.RECEIPT_SEQ, data: this.receiptSeq }
+      ];
+
+      for (const item of items) {
+        const { error } = await supabase.from('resik_cloud_sync').upsert({
+          key: item.key,
+          data: item.data,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' });
+        if (error) throw error;
+      }
+
+      this.cloudStatus = 'CONNECTED';
+      this.cloudErrorMsg = null;
+      this.lastCloudSyncAt = new Date().toISOString();
+      this.isCloudSyncing = false;
+      this.notifySyncListeners();
+      return {
+        success: true,
+        message: `Berhasil mengunggah ${this.customers.length} Pelanggan dan seluruh data ke Supabase Cloud!`
+      };
+    } catch (err: any) {
+      this.cloudStatus = 'ERROR';
+      this.cloudErrorMsg = err.message || 'Gagal unggah data ke Supabase Cloud';
+      this.isCloudSyncing = false;
+      this.notifySyncListeners();
+      return { success: false, message: err.message };
+    }
+  }
 }
 
 export const dataService = new DataService();
+

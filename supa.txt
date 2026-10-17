@@ -1,0 +1,38 @@
+
+
+supabase
+resik
+
+NEXT_PUBLIC_SUPABASE_URL=https://irtcdthxhilloeekcfsp.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_rACSs91lXxWcrLhP5Ni9mA_JDzpfkph
+
+
+
+dan data yang ada rt nya tambahkan keterangan RT 0 jadi misal datanya 1 ubah menjadi RT 01 kalau data kosong biarkan saja
+
+Chip Variabel Otomatis (1-Click Insert): Super Admin cukup mengklik tombol variabel di atas kotak teks untuk menyisipkan data dinamis:
+{nama}: Nama lengkap warga
+{id_pelanggan}: ID resmi yang diterbitkan (misal: PLG-RW01-0003)
+{no_hp}: Nomor WhatsApp warga
+{pin_awal}: PIN keamanan awal (1234)
+{kategori}: Kategori tarif (misal: Rumah Tangga)
+{alamat}: Alamat rumah warga
+{nama_bumdes}: Nama resmi BUMDes
+{nomor_bumdes}: Nomor WhatsApp pengurus BUMDes
+{link_web}: Alamat portal login website BUMDes
+
+
+$ git init
+$ git add .
+$ git remote add origin
+$ git push origin master
+
+
+
+struk pbb
+anon public
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliaG51bnRkcXdwZ2FrZGR4Y3lqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyNDQ5NTIsImV4cCI6MjEwNzgyMDk1Mn0.Nn4n-tE9AxjxnEBlVAUReG-BW54XUrJCoEhR558V0S0
+
+https://ybhnuntdqwpgakddxcyj.supabase.co
+
+sb_publishable_uSMSJrjSd24DZ7jmAynvEw_H5xH5Q7z

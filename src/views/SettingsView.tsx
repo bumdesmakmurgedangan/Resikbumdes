@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { dataService } from '../services/dataService';
 import {
@@ -9,7 +9,8 @@ import {
   Settings, Building2, Globe, CreditCard, QrCode, MapPin,
   Tag, Calendar, MessageSquare, Users, Shield, Plus,
   Edit2, Trash2, Check, X, Database, RefreshCw, Upload, Image,
-  CheckCircle2, RotateCcw, Smartphone, Sparkles, AlertTriangle, AlertCircle, Lock
+  CheckCircle2, RotateCcw, Smartphone, Sparkles, AlertTriangle, AlertCircle, Lock,
+  Copy, Cloud, CloudUpload, CloudDownload
 } from 'lucide-react';
 import { saveSupabaseConfig, clearSupabaseConfig, getSupabaseConfig } from '../lib/supabase';
 import { SocialBrandIcon, getSocialBadgeStyle } from '../components/common/SocialBrandIcon';
@@ -89,6 +90,88 @@ export const SettingsView: React.FC = () => {
   // Safety Lock Reset modal state
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [resetConfirmationInput, setResetConfirmationInput] = useState('');
+  const [resetMode, setResetMode] = useState<'TRANSACTIONS_ONLY' | 'FULL_DATABASE'>('TRANSACTIONS_ONLY');
+
+  // Cloud Sync & SQL state
+  const [cloudSyncStatus, setCloudSyncStatus] = useState(dataService.getCloudSyncStatus());
+  const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [sqlCopied, setSqlCopied] = useState(false);
+  const [billGenFeedback, setBillGenFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = dataService.subscribeSync(() => {
+      setCloudSyncStatus(dataService.getCloudSyncStatus());
+    });
+    return unsub;
+  }, []);
+
+  const handlePullCloud = async () => {
+    setSyncFeedback(null);
+    const res = await dataService.pullFromCloud();
+    setSyncFeedback({
+      type: res.success ? 'success' : 'error',
+      message: res.message
+    });
+    if (res.success) {
+      setRefreshKey(prev => prev + 1);
+    }
+  };
+
+  const handlePushCloud = async () => {
+    setSyncFeedback(null);
+    const res = await dataService.pushAllToCloud();
+    setSyncFeedback({
+      type: res.success ? 'success' : 'error',
+      message: res.message
+    });
+  };
+
+  const handleCopySql = () => {
+    const sql = `-- ============================================================
+-- SCRIPT AKTIVASI SINKRONISASI CLOUD RESIK V4.0 KE SUPABASE
+-- BUMDes Makmur Gedangan
+-- Jalankan di menu SQL Editor Supabase Anda
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.resik_cloud_sync (
+    key TEXT PRIMARY KEY,
+    data JSONB NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.resik_cloud_sync DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.system_settings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.customers DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.service_locations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.bills DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.payments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.receipts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.bank_accounts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.organization_links DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.message_templates DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.regions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.categories DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.tariffs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.roles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.audit_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.broadcasts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.customer_registrations DISABLE ROW LEVEL SECURITY;
+
+GRANT ALL ON TABLE public.resik_cloud_sync TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;`;
+    navigator.clipboard.writeText(sql);
+    setSqlCopied(true);
+    setTimeout(() => setSqlCopied(false), 3000);
+  };
+
+  const handleGenerateBillsMass = () => {
+    const res = dataService.generateMonthlyBillsForAll(undefined, undefined, currentUser);
+    setBillGenFeedback(`Berhasil menerbitkan ${res.created} tagihan baru bulan berjalan (${res.skipped} tagihan sudah ada).`);
+    setTimeout(() => setBillGenFeedback(null), 5000);
+    setRefreshKey(prev => prev + 1);
+  };
 
   // Category & Tariff modal state
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -1413,20 +1496,108 @@ export const SettingsView: React.FC = () => {
 
       {/* ================= TAB 8: KONEKSI SUPABASE & SEED ================= */}
       {activeTab === 'SUPABASE' && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5 max-w-2xl">
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-6 max-w-3xl">
           <div>
-            <h2 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-              <Database className="w-4 h-4 text-brand-600" />
-              <span>Koneksi Supabase Backend & Database</span>
+            <h2 className="font-bold text-base text-slate-900 flex items-center gap-2">
+              <Database className="w-5 h-5 text-brand-600" />
+              <span>Koneksi Supabase Cloud &amp; Sinkronisasi Multi-Perangkat</span>
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              RESIK dirancang siap produksi dengan Supabase PostgreSQL, Auth, dan Storage. Anda dapat memasukkan URL project Supabase dan Anon Key Anda di bawah ini, atau menggunakan Local Storage Engine bawaan.
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Dengan menghubungkan ke Supabase, data yang Anda import di laptop akan otomatis tersinkronisasi ke seluruh perangkat (HP pengurus, laptop lain, komputer kasir) secara terpusat dan aman.
             </p>
           </div>
 
-          <div className="space-y-3 text-xs">
+          {/* Status Sinkronisasi Real-Time */}
+          <div className="p-4 rounded-2xl border bg-slate-50 border-slate-200 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-3 h-3 rounded-full ${
+                  cloudSyncStatus.status === 'CONNECTED' ? 'bg-emerald-500 animate-pulse' :
+                  cloudSyncStatus.status === 'SYNCING' ? 'bg-amber-500 animate-spin' :
+                  cloudSyncStatus.status === 'ERROR' ? 'bg-rose-500' : 'bg-slate-400'
+                }`} />
+                <span className="font-bold text-xs text-slate-800">
+                  Status Cloud: {
+                    cloudSyncStatus.status === 'CONNECTED' ? '🟢 Terhubung ke Supabase Cloud (Aktif)' :
+                    cloudSyncStatus.status === 'SYNCING' ? '🔄 Sedang Menyinkronkan Data...' :
+                    cloudSyncStatus.status === 'ERROR' ? '🟡 Perlu Aktivasi Script SQL di Supabase' : '⚪ Belum Terhubung'
+                  }
+                </span>
+              </div>
+              {cloudSyncStatus.lastSyncAt && (
+                <span className="text-[11px] text-slate-400">
+                  Terakhir sinkron: {new Date(cloudSyncStatus.lastSyncAt).toLocaleTimeString('id-ID')}
+                </span>
+              )}
+            </div>
+
+            {cloudSyncStatus.errorMsg && (
+              <div className="text-xs text-rose-700 bg-rose-50 p-2.5 rounded-xl border border-rose-200 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+                <div className="leading-relaxed">
+                  <strong>Pesan Sistem:</strong> {cloudSyncStatus.errorMsg}.<br />
+                  <span className="text-[11px] text-rose-800">Silakan jalankan script SQL aktivasi di bawah ini melalui SQL Editor Supabase Anda agar izin baca &amp; tulis terbuka.</span>
+                </div>
+              </div>
+            )}
+
+            {syncFeedback && (
+              <div className={`text-xs p-2.5 rounded-xl border flex items-center gap-2 ${
+                syncFeedback.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+              }`}>
+                {syncFeedback.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />}
+                <span>{syncFeedback.message}</span>
+              </div>
+            )}
+
+            {/* Tombol Aksi Sinkronisasi */}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handlePushCloud}
+                disabled={cloudSyncStatus.isSyncing}
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <CloudUpload className="w-4 h-4" />
+                <span>Unggah Data Laptop Ini ke Cloud (Push 279 Warga)</span>
+              </button>
+              <button
+                type="button"
+                onClick={handlePullCloud}
+                disabled={cloudSyncStatus.isSyncing}
+                className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <CloudDownload className="w-4 h-4 text-brand-600" />
+                <span>Tarik Data Terbaru dari Cloud (Pull)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Box Script Aktivasi SQL (Penting untuk mengatasi RLS Supabase) */}
+          <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                <Shield className="w-4 h-4 text-amber-700" />
+                <span>Langkah Aktivasi Supabase (Izin Baca &amp; Simpan Data Multi-Perangkat)</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopySql}
+                className="px-3 py-1.5 bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold rounded-xl text-xs transition flex items-center gap-1.5 shrink-0 shadow-2xs"
+              >
+                {sqlCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-amber-700" />}
+                <span>{sqlCopied ? 'Tersalin!' : 'Salin Script SQL'}</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-amber-800 leading-relaxed">
+              Supabase secara default mengaktifkan proteksi RLS sehingga browser di perangkat lain diblokir saat membaca data. Cukup <strong>salin script di atas</strong>, buka tab <strong>Supabase</strong> Anda &gt; menu <strong>SQL Editor</strong> &gt; tempel (paste) &gt; klik <strong>Run</strong>. Setelah itu, klik tombol <em>&quot;Unggah Data Laptop Ini ke Cloud&quot;</em>.
+            </p>
+          </div>
+
+          {/* Form Konfigurasi URL & Key */}
+          <div className="space-y-3 text-xs pt-1">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Supabase URL</label>
+              <label className="block font-bold text-slate-700 mb-1">Supabase URL Project</label>
               <input
                 type="text"
                 value={supabaseUrlInput}
@@ -1437,7 +1608,7 @@ export const SettingsView: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Supabase Anon Key</label>
+              <label className="block font-bold text-slate-700 mb-1">Supabase Anon / Publishable Key</label>
               <input
                 type="password"
                 value={supabaseKeyInput}
@@ -1447,20 +1618,20 @@ export const SettingsView: React.FC = () => {
               />
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => saveSupabaseConfig(supabaseUrlInput, supabaseKeyInput)}
                 className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-sm"
               >
-                Simpan & Sambungkan
+                Simpan Konfigurasi
               </button>
               <button
                 type="button"
                 onClick={() => clearSupabaseConfig()}
                 className="px-4 py-2.5 border border-slate-300 text-slate-700 rounded-xl font-medium"
               >
-                Gunakan Mode Mock Lokal
+                Reset ke Default
               </button>
             </div>
           </div>
@@ -1506,27 +1677,91 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
 
-          {/* Reset Database / Smart Seed */}
-          <div className="pt-4 border-t border-slate-200">
-            <div className="flex items-center gap-2 mb-1.5">
-              <h3 className="font-bold text-xs text-slate-800 uppercase tracking-wider">Bersihkan Data Pelanggan &amp; Transaksi (Siap Pakai)</h3>
-              <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
-                Profil BUMDes &amp; Template WA Aman
-              </span>
+          {/* ======================================================= */}
+          {/* BAGIAN RESET TRANSAKSI & GENERATE TAGIHAN (SESUAI REQUEST) */}
+          {/* ======================================================= */}
+          <div className="pt-5 border-t border-slate-200 space-y-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-sm text-slate-900">Manajemen Transaksi &amp; Pembersihan Data</h3>
+                <span className="text-[10px] bg-emerald-50 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  Perlindungan Data Warga
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Anda dapat mereset data transaksi dan tagihan uji coba kapan saja tanpa khawatir kehilangan 279 data pelanggan yang sudah diimport maupun profil BUMDes.
+              </p>
             </div>
-            <p className="text-xs text-slate-500 mb-3.5 leading-relaxed">
-              Mengosongkan total seluruh data pelanggan contoh (Budi Santoso dkk), tagihan, dan riwayat transaksi menjadi 0 agar siap diinput data warga asli Desa Gedangan, <strong>tanpa menghapus</strong> profil BUMDes, rekening bank, QRIS, tautan media sosial, template pesan WhatsApp, maupun sesi login Anda.
-            </p>
-            <button
-              onClick={() => {
-                setResetConfirmationInput('');
-                setResetModalOpen(true);
-              }}
-              className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer border border-rose-200 shadow-2xs"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Bersihkan Data (Kosongkan Pelanggan)</span>
-            </button>
+
+            {billGenFeedback && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2 animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{billGenFeedback}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {/* Opsi 1: Reset Transaksi Saja (Recommended) */}
+              <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-2xl flex flex-col justify-between space-y-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-emerald-900">1. Reset Transaksi &amp; Tagihan Saja</span>
+                    <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Disarankan</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                    Menghapus riwayat transaksi dan tagihan uji coba menjadi 0. <strong>Data 279 Warga, titik GPS, profil BUMDes, rekening, dan template WA TETAP UTUH 100%.</strong>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetMode('TRANSACTIONS_ONLY');
+                    setResetConfirmationInput('');
+                    setResetModalOpen(true);
+                  }}
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Transaksi Saja (Warga Aman)</span>
+                </button>
+              </div>
+
+              {/* Opsi 2: Terbitkan Tagihan Baru Bulan Ini */}
+              <div className="p-4 bg-blue-50/50 border border-blue-200 rounded-2xl flex flex-col justify-between space-y-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-blue-900">2. Terbitkan Tagihan Baru Bulan Ini</span>
+                    <span className="text-[10px] font-black bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">1-Klik</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                    Setelah reset transaksi atau pergantian bulan, klik tombol ini untuk menerbitkan tagihan bulan berjalan secara otomatis bagi seluruh warga aktif.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGenerateBillsMass}
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Terbitkan Tagihan Bulan Ini</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Opsi Ekstrem: Reset Total (Hapus Warga & Transaksi) */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setResetMode('FULL_DATABASE');
+                  setResetConfirmationInput('');
+                  setResetModalOpen(true);
+                }}
+                className="text-[11px] text-rose-600 hover:text-rose-800 font-semibold underline underline-offset-2 transition"
+              >
+                Opsi Ekstrem: Kosongkan juga data warga (Reset Total Database)
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1894,38 +2129,56 @@ export const SettingsView: React.FC = () => {
       {/* Modal Barier Pengaman Reset (Safety Lock Modal) */}
       {resetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-rose-200">
-            <div className="flex items-center gap-3 text-rose-600 mb-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-rose-600" />
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-slate-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                resetMode === 'TRANSACTIONS_ONLY' ? 'bg-emerald-50 border border-emerald-200 text-emerald-600' : 'bg-rose-50 border border-rose-200 text-rose-600'
+              }`}>
+                {resetMode === 'TRANSACTIONS_ONLY' ? <RotateCcw className="w-5 h-5 text-emerald-600" /> : <AlertTriangle className="w-5 h-5 text-rose-600" />}
               </div>
               <div>
-                <h3 className="font-black text-base text-slate-900">Konfirmasi Bersihkan Data Pelanggan</h3>
-                <p className="text-[11px] text-slate-500">Pengosongan seluruh data warga contoh untuk persiapan data riil</p>
+                <h3 className="font-black text-base text-slate-900">
+                  {resetMode === 'TRANSACTIONS_ONLY' ? 'Konfirmasi Reset Transaksi' : 'Konfirmasi Kosongkan Pelanggan'}
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  {resetMode === 'TRANSACTIONS_ONLY' ? 'Mengosongkan tagihan & riwayat bayar saja (Data warga aman)' : 'Pengosongan seluruh data warga untuk persiapan data riil'}
+                </p>
               </div>
             </div>
 
             <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-2 mb-4">
-              <div className="flex items-center gap-2 text-emerald-700 font-semibold text-[11px]">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                <span>AMAN: Profil BUMDes, Rekening Bank, QRIS, Medsos &amp; Template WA</span>
+              <div className="flex items-start gap-2 text-emerald-800 font-semibold text-[11px]">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+                <span>
+                  {resetMode === 'TRANSACTIONS_ONLY'
+                    ? 'DIJAMIN AMAN: Seluruh 279 Data Pelanggan, Titik GPS, Profil BUMDes, Rekening Bank, QRIS, Medsos & Template WA'
+                    : 'AMAN: Profil BUMDes, Rekening Bank, QRIS, Medsos & Template WA'}
+                </span>
               </div>
-              <div className="flex items-center gap-2 text-rose-700 font-semibold text-[11px]">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-                <span>DIKOSONGKAN TOTAL: Data Pelanggan (Budi Santoso dkk), Tagihan &amp; Transaksi (0 Data)</span>
+              <div className="flex items-start gap-2 text-rose-700 font-semibold text-[11px]">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+                <span>
+                  {resetMode === 'TRANSACTIONS_ONLY'
+                    ? 'DIRESET: Seluruh Tagihan Bulanan & Riwayat Pembayaran menjadi 0 (Siap Mulai Baru)'
+                    : 'DIKOSONGKAN TOTAL: Data Pelanggan (Budi Santoso dkk), Tagihan & Transaksi (0 Data)'}
+                </span>
               </div>
             </div>
 
             <div className="space-y-2 text-xs mb-4">
               <label className="block text-slate-700 font-bold">
-                Ketik kata <span className="font-mono text-rose-600 font-black bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">RESET</span> di bawah ini untuk membuka kunci:
+                Ketik kata <span className={`font-mono font-black px-1.5 py-0.5 rounded border ${
+                  resetMode === 'TRANSACTIONS_ONLY' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-rose-600 bg-rose-50 border-rose-200'
+                }`}>RESET</span> di bawah ini untuk membuka kunci:
               </label>
               <input
                 type="text"
                 value={resetConfirmationInput}
                 onChange={(e) => setResetConfirmationInput(e.target.value)}
                 placeholder="Ketik: RESET"
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-mono text-sm tracking-wider uppercase text-center focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                className={`w-full px-3.5 py-2.5 border border-slate-300 rounded-xl font-mono text-sm tracking-wider uppercase text-center focus:ring-2 focus:outline-none ${
+                  resetMode === 'TRANSACTIONS_ONLY' ? 'focus:ring-emerald-500' : 'focus:ring-rose-500'
+                }`}
                 autoFocus
               />
             </div>
@@ -1946,17 +2199,29 @@ export const SettingsView: React.FC = () => {
                 disabled={resetConfirmationInput.trim().toUpperCase() !== 'RESET'}
                 onClick={() => {
                   if (resetConfirmationInput.trim().toUpperCase() === 'RESET') {
-                    dataService.resetToDefaultSeed();
+                    if (resetMode === 'TRANSACTIONS_ONLY') {
+                      dataService.resetTransactionsOnly(currentUser);
+                      setResetModalOpen(false);
+                      setResetConfirmationInput('');
+                      setRefreshKey(prev => prev + 1);
+                      alert('Berhasil! Seluruh transaksi tagihan dan pembayaran uji coba telah dibersihkan. Data 279 warga dan seluruh profil BUMDes tetap aman.');
+                    } else {
+                      dataService.resetToDefaultSeed();
+                    }
                   }
                 }}
                 className={`px-5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   resetConfirmationInput.trim().toUpperCase() === 'RESET'
-                    ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-md cursor-pointer'
+                    ? (resetMode === 'TRANSACTIONS_ONLY'
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md cursor-pointer'
+                        : 'bg-rose-600 hover:bg-rose-700 text-white shadow-md cursor-pointer')
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
                 }`}
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Bersihkan &amp; Kosongkan Sekarang</span>
+                <span>
+                  {resetMode === 'TRANSACTIONS_ONLY' ? 'Reset Transaksi Saja' : 'Bersihkan & Kosongkan Sekarang'}
+                </span>
               </button>
             </div>
           </div>
