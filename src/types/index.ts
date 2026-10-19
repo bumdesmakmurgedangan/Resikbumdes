@@ -313,6 +313,16 @@ export interface ImportError {
   rawData: any;
 }
 
+export interface ImportResult {
+  total: number;
+  success: number;
+  createdCount: number;
+  updatedCount: number;
+  failed: number;
+  errors: ImportError[];
+  createdCustomers: Customer[];
+}
+
 export interface AuthSession {
   type: 'STAFF' | 'CUSTOMER';
   user?: User;

@@ -2,7 +2,7 @@ import {
   User, Customer, ServiceLocation, Bill, Payment, BankAccount,
   OrganizationLink, MessageTemplate, Broadcast, AuditLog,
   SystemSettings, Region, Category, Tariff, Permission, Role,
-  BillStatus, PaymentMethod, PaymentStatus, ImportItem, ImportError, Receipt,
+  BillStatus, PaymentMethod, PaymentStatus, ImportItem, ImportError, ImportResult, Receipt,
   CustomerRegistration, RegistrationStatus
 } from '../types';
 import {
@@ -1679,15 +1679,73 @@ class DataService {
     XLSX.writeFile(workbook, 'Template_Import_Pelanggan_RESIK_BUMDes.xlsx');
   }
 
-  public validateAndImportCustomers(rows: any[], actorUser: User): {
-    total: number;
-    success: number;
-    failed: number;
-    errors: ImportError[];
-    createdCustomers: Customer[];
-  } {
+  /**
+   * Cari pelanggan yang sudah ada berdasarkan Kode Pelanggan, No HP, atau Nama + RW
+   */
+  public findExistingCustomer(name: string, phone: string, rw: string, customerCode?: string): Customer | undefined {
+    // 1. Cocokkan berdasarkan Kode / ID Pelanggan (jika diisi di spreadsheet)
+    if (customerCode && customerCode.trim().length >= 3) {
+      const codeClean = customerCode.trim().toUpperCase();
+      const byCode = this.customers.find(c => c.customerCode?.trim().toUpperCase() === codeClean);
+      if (byCode) return byCode;
+    }
+
+    // 2. Cocokkan berdasarkan No HP (hanya jika valid minimal 8 digit)
+    const cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+    if (cleanPhone.length >= 8) {
+      const byPhone = this.customers.find(c => {
+        if (!c.phone) return false;
+        const custCleanPhone = c.phone.replace(/[^0-9]/g, '');
+        return custCleanPhone.length >= 8 && custCleanPhone === cleanPhone;
+      });
+      if (byPhone) return byPhone;
+    }
+
+    // 3. Cocokkan berdasarkan Nama (case-insensitive) & RW
+    const normName = (name || '').trim().toLowerCase();
+    const normRw = (rw || '').trim().toUpperCase();
+    if (normName.length >= 2) {
+      const byNameAndRw = this.customers.find(c => {
+        if (c.name.trim().toLowerCase() !== normName) return false;
+        // Cek apakah RW cocok dengan layanan pelanggan atau alamat pelanggan
+        const custServices = this.services.filter(s => s.customerId === c.id);
+        const matchServiceRw = custServices.some(s => s.rw.trim().toUpperCase() === normRw);
+        const matchAddressRw = (c.address || '').toUpperCase().includes(normRw);
+        return matchServiceRw || matchAddressRw;
+      });
+      if (byNameAndRw) return byNameAndRw;
+
+      // Jika RW tidak spesifik tapi nama warga sama persis dan unik di database
+      const exactNameMatches = this.customers.filter(c => c.name.trim().toLowerCase() === normName);
+      if (exactNameMatches.length === 1) {
+        return exactNameMatches[0];
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Cek status baris data import untuk preview (Baru atau Update Eksisting)
+   */
+  public checkImportRowStatus(row: any): { isExisting: boolean; matchedCustomer?: Customer } {
+    const name = String(row['Nama Pelanggan'] || row['namaPelanggan'] || row['Nama'] || row['nama'] || '').trim();
+    const phone = String(row['No HP'] || row['noHp'] || row['Telepon'] || row['no_hp'] || '').trim();
+    const rw = String(row['RW'] || row['rw'] || 'RW 01').trim();
+    const customerCode = String(row['ID Pelanggan'] || row['Kode Pelanggan'] || row['kodePelanggan'] || row['Kode'] || '').trim();
+
+    const existing = this.findExistingCustomer(name, phone, rw, customerCode);
+    return {
+      isExisting: Boolean(existing),
+      matchedCustomer: existing
+    };
+  }
+
+  public validateAndImportCustomers(rows: any[], actorUser: User): ImportResult {
     const errors: ImportError[] = [];
     const createdCustomers: Customer[] = [];
+    let createdCount = 0;
+    let updatedCount = 0;
 
     const categoriesMap = new Map(this.categories.map(c => [c.name.toLowerCase().trim(), c]));
     const tariffsList = this.tariffs;
@@ -1701,7 +1759,7 @@ class DataService {
       const rw = row['RW'] || row['rw'] || 'RW 01';
       const categoryName = (row['Kategori'] || row['kategori'] || 'Rumah Tangga').toLowerCase().trim();
       const objectName = row['Nama Objek'] || row['namaObjek'] || row['Objek'] || 'Rumah';
-      const tariffRaw = row['Tarif'] || row['tarif'] || 20000;
+      const explicitCustomerCode = String(row['ID Pelanggan'] || row['Kode Pelanggan'] || row['kodePelanggan'] || row['Kode'] || '').trim();
 
       // Intelligent extraction of GPS coordinates from either Google Maps link/point or separate lat/lng
       let lat: number | null = null;
@@ -1768,44 +1826,103 @@ class DataService {
       const parsedTariff = (!isNaN(Number(rawTariff)) && Number(rawTariff) > 0) ? Number(rawTariff) : tariff.amount;
       const isCustomTariff = parsedTariff !== tariff.amount;
 
-      // Auto generate Customer Code & initial PIN
-      const customerCode = this.generateCustomerCode(rw);
-      const newCust = this.saveCustomer({
-        customerCode,
-        name: String(name).trim(),
-        phone,
-        address: String(address).trim(),
-        pinHash: '1234', // default PIN
-        isDefaultPin: true,
-        status: 'ACTIVE'
-      }, actorUser);
+      // === SKENARIO B: UPSERT - Deteksi apakah pelanggan ini sudah ada di database ===
+      const existingCustomer = this.findExistingCustomer(String(name).trim(), phone, String(rw).trim(), explicitCustomerCode);
 
-      // Auto generate Service Location with customTariffAmount support
-      const newService = this.saveServiceLocation({
-        customerId: newCust.id,
-        name: String(objectName).trim(),
-        address: String(address).trim(),
-        rt: String(rt).trim(),
-        rw: String(rw).trim(),
-        categoryId: category.id,
-        tariffId: tariff.id,
-        customTariffAmount: isCustomTariff ? parsedTariff : null,
-        latitude: lat,
-        longitude: lng,
-        status: 'ACTIVE'
-      }, actorUser);
+      let customerTarget: Customer;
+      let serviceTarget: ServiceLocation;
+
+      if (existingCustomer) {
+        // [UPDATE EKSISTING] Perbarui data pelanggan yang sudah ada
+        const cleanPhone = phone.replace(/[^0-9]/g, '');
+        const updatedPhone = cleanPhone.length >= 8 ? phone : existingCustomer.phone;
+        const updatedAddress = String(address).trim() || existingCustomer.address;
+
+        customerTarget = this.saveCustomer({
+          id: existingCustomer.id,
+          phone: updatedPhone,
+          address: updatedAddress,
+          status: 'ACTIVE'
+        }, actorUser);
+
+        // Cari lokasi layanan eksisting milik pelanggan ini
+        let existingService = this.services.find(s => s.customerId === existingCustomer.id);
+        if (existingService) {
+          // Perbarui koordinat GPS jika ada di file Excel
+          const updatedLat = lat !== null ? lat : existingService.latitude;
+          const updatedLng = lng !== null ? lng : existingService.longitude;
+          const updatedCustomTariff = isCustomTariff ? parsedTariff : existingService.customTariffAmount;
+
+          serviceTarget = this.saveServiceLocation({
+            id: existingService.id,
+            latitude: updatedLat,
+            longitude: updatedLng,
+            address: updatedAddress,
+            rt: String(rt).trim() || existingService.rt,
+            rw: String(rw).trim() || existingService.rw,
+            customTariffAmount: updatedCustomTariff,
+            categoryId: category.id,
+            tariffId: tariff.id,
+            status: 'ACTIVE'
+          }, actorUser);
+        } else {
+          serviceTarget = this.saveServiceLocation({
+            customerId: customerTarget.id,
+            name: String(objectName).trim(),
+            address: String(address).trim(),
+            rt: String(rt).trim(),
+            rw: String(rw).trim(),
+            categoryId: category.id,
+            tariffId: tariff.id,
+            customTariffAmount: isCustomTariff ? parsedTariff : null,
+            latitude: lat,
+            longitude: lng,
+            status: 'ACTIVE'
+          }, actorUser);
+        }
+
+        updatedCount++;
+      } else {
+        // [CREATE BARU] Data pelanggan belum pernah ada
+        const customerCode = this.generateCustomerCode(rw);
+        customerTarget = this.saveCustomer({
+          customerCode,
+          name: String(name).trim(),
+          phone,
+          address: String(address).trim(),
+          pinHash: '1234', // default PIN
+          isDefaultPin: true,
+          status: 'ACTIVE'
+        }, actorUser);
+
+        serviceTarget = this.saveServiceLocation({
+          customerId: customerTarget.id,
+          name: String(objectName).trim(),
+          address: String(address).trim(),
+          rt: String(rt).trim(),
+          rw: String(rw).trim(),
+          categoryId: category.id,
+          tariffId: tariff.id,
+          customTariffAmount: isCustomTariff ? parsedTariff : null,
+          latitude: lat,
+          longitude: lng,
+          status: 'ACTIVE'
+        }, actorUser);
+
+        createdCount++;
+      }
 
       // Handle Status Bayar Bulan Berjalan (e.g. LUNAS vs BELUM BAYAR)
       const rawStatusBayar = String(row['Status Bayar Bulan Ini'] ?? row['Status Bayar'] ?? row['Status Pembayaran'] ?? '').trim().toUpperCase();
       const isPaidCurrentMonth = rawStatusBayar === 'LUNAS' || rawStatusBayar === 'PAID' || rawStatusBayar === 'SUDAH' || rawStatusBayar === 'SUDAH BAYAR';
 
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const currentBill = this.bills.find(b => b.serviceId === serviceTarget.id && b.billingYear === currentYear && b.billingMonth === currentMonth);
+
       if (isPaidCurrentMonth) {
-        // Cari tagihan bulan berjalan yang baru saja dibuat
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
-        const currentBill = this.bills.find(b => b.serviceId === newService.id && b.billingYear === currentYear && b.billingMonth === currentMonth);
-        if (currentBill) {
+        if (currentBill && currentBill.status !== 'PAID') {
           currentBill.status = 'PAID';
           currentBill.updatedAt = new Date().toISOString();
           const receiptNumber = this.generateReceiptNumber(currentYear, currentMonth);
@@ -1834,15 +1951,15 @@ class DataService {
       }
 
       // Handle Tunggakan Lampau (Jumlah Bulan Menunggak Sebelum Bulan Ini)
+      // Mencegah duplikasi: Hanya buat tagihan jika bulan lampau tersebut belum pernah ada!
       const rawTunggakan = row['Jumlah Bulan Tunggakan Lampau'] ?? row['Tunggakan Lampau'] ?? row['Tunggakan'] ?? 0;
       const overdueMonthsCount = (!isNaN(Number(rawTunggakan)) && Number(rawTunggakan) > 0)
         ? Math.min(Math.floor(Number(rawTunggakan)), 24)
         : 0;
 
       if (overdueMonthsCount > 0) {
-        const now = new Date();
         let targetYear = now.getFullYear();
-        let targetMonth = now.getMonth() + 1; // bulan berjalan (misal 10)
+        let targetMonth = now.getMonth() + 1;
 
         for (let i = 1; i <= overdueMonthsCount; i++) {
           targetMonth -= 1;
@@ -1850,28 +1967,37 @@ class DataService {
             targetMonth = 12;
             targetYear -= 1;
           }
-          this.createManualBill({
-            serviceId: newService.id,
-            billingYear: targetYear,
-            billingMonth: targetMonth,
-            amount: parsedTariff,
-            status: 'OVERDUE'
-          }, actorUser);
+
+          const existingBillForMonth = this.bills.find(b => b.serviceId === serviceTarget.id && b.billingYear === targetYear && b.billingMonth === targetMonth);
+          if (!existingBillForMonth) {
+            this.createManualBill({
+              serviceId: serviceTarget.id,
+              billingYear: targetYear,
+              billingMonth: targetMonth,
+              amount: parsedTariff,
+              status: 'OVERDUE'
+            }, actorUser);
+          }
         }
       }
 
-      createdCustomers.push(newCust);
+      createdCustomers.push(customerTarget);
     });
 
+    const totalSuccess = createdCount + updatedCount;
     this.logAudit(actorUser.id, actorUser.fullName, 'CUSTOMERS_IMPORTED', 'IMPORT', null, null, {
       total: rows.length,
-      success: createdCustomers.length,
+      success: totalSuccess,
+      createdCount,
+      updatedCount,
       failed: errors.length
     });
 
     return {
       total: rows.length,
-      success: createdCustomers.length,
+      success: totalSuccess,
+      createdCount,
+      updatedCount,
       failed: errors.length,
       errors,
       createdCustomers
