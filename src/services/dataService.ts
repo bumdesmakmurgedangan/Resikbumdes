@@ -97,6 +97,18 @@ class DataService {
       budi.phone = '081234567890';
     }
     this.services = this.load(STORAGE_KEYS.SERVICES, INITIAL_SERVICE_LOCATIONS);
+    // Sinkronkan status lokasi layanan untuk pelanggan yang nonaktif
+    const inactiveCustIds = new Set(this.customers.filter(c => c.status === 'INACTIVE').map(c => c.id));
+    let hasServiceFix = false;
+    this.services.forEach(s => {
+      if (inactiveCustIds.has(s.customerId) && s.status !== 'INACTIVE') {
+        s.status = 'INACTIVE';
+        hasServiceFix = true;
+      }
+    });
+    if (hasServiceFix) {
+      this.save(STORAGE_KEYS.SERVICES, this.services);
+    }
     this.bills = this.load(STORAGE_KEYS.BILLS, INITIAL_BILLS);
     this.payments = this.load(STORAGE_KEYS.PAYMENTS, INITIAL_PAYMENTS);
     this.bankAccounts = this.load(STORAGE_KEYS.BANK_ACCOUNTS, INITIAL_BANK_ACCOUNTS);
@@ -668,6 +680,21 @@ class DataService {
       };
       this.customers[idx] = updated;
       this.save(STORAGE_KEYS.CUSTOMERS, this.customers);
+
+      // Sinkronkan status lokasi layanan jika status pelanggan berubah
+      if (customer.status && customer.status !== old.status) {
+        let servicesChanged = false;
+        this.services.forEach(s => {
+          if (s.customerId === updated.id) {
+            s.status = customer.status!;
+            servicesChanged = true;
+          }
+        });
+        if (servicesChanged) {
+          this.save(STORAGE_KEYS.SERVICES, this.services);
+        }
+      }
+
       if (actorUser) {
         this.logAudit(actorUser.id, actorUser.fullName, 'CUSTOMER_UPDATED', 'CUSTOMER', updated.id, old, updated);
       }
@@ -702,6 +729,19 @@ class DataService {
       cust.status = cust.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
       cust.updatedAt = new Date().toISOString();
       this.save(STORAGE_KEYS.CUSTOMERS, this.customers);
+
+      // Sinkronkan status seluruh lokasi layanan milik pelanggan ini
+      let servicesChanged = false;
+      this.services.forEach(s => {
+        if (s.customerId === id) {
+          s.status = cust.status;
+          servicesChanged = true;
+        }
+      });
+      if (servicesChanged) {
+        this.save(STORAGE_KEYS.SERVICES, this.services);
+      }
+
       this.logAudit(actorUser.id, actorUser.fullName, cust.status === 'ACTIVE' ? 'CUSTOMER_ACTIVATED' : 'CUSTOMER_DEACTIVATED', 'CUSTOMER', id);
     }
     return this.customers;
@@ -878,10 +918,14 @@ class DataService {
       const cust = this.customers.find(c => c.id === s.customerId);
       const cat = this.categories.find(c => c.id === s.categoryId);
       const trf = this.tariffs.find(t => t.id === s.tariffId);
+      const isCustInactive = cust?.status === 'INACTIVE';
       return {
         ...s,
+        // Jika pelanggan dinonaktifkan, status lokasi layanan otomatis nonaktif
+        status: isCustInactive ? 'INACTIVE' : s.status,
         customerName: cust?.name,
         customerCode: cust?.customerCode,
+        customerStatus: cust?.status,
         categoryName: cat?.name,
         tariffAmount: (s.customTariffAmount && s.customTariffAmount > 0) ? s.customTariffAmount : trf?.amount
       };
@@ -2222,7 +2266,13 @@ class DataService {
           if (Array.isArray(row.data)) this.customers = row.data;
           break;
         case STORAGE_KEYS.SERVICES:
-          if (Array.isArray(row.data)) this.services = row.data;
+          if (Array.isArray(row.data)) {
+            const inactiveCustIds = new Set(this.customers.filter(c => c.status === 'INACTIVE').map(c => c.id));
+            this.services = row.data.map((s: ServiceLocation) => ({
+              ...s,
+              status: (inactiveCustIds.has(s.customerId) ? 'INACTIVE' : s.status) as 'ACTIVE' | 'INACTIVE'
+            }));
+          }
           break;
         case STORAGE_KEYS.BILLS:
           if (Array.isArray(row.data)) this.bills = row.data;

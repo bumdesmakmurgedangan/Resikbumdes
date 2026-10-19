@@ -113,6 +113,7 @@ export interface ServiceLocation {
   customerId: string;
   customerCode?: string;
   customerName?: string;
+  customerStatus?: 'ACTIVE' | 'INACTIVE';
   serviceCode: string; // e.g. LYN-RW03-0025-01
   name: string; // e.g. Rumah, Toko
   address: string;

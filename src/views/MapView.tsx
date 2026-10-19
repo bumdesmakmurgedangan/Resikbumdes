@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { dataService } from '../services/dataService';
-import { MapPin, Filter, Search, Home, Store, Building, Navigation, ExternalLink } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { Navigation, ExternalLink, Crosshair, RefreshCw, Layers } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { ServiceLocation } from '../types';
 
 // Fix Leaflet standard marker icon issues in Vite/Webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -49,16 +50,68 @@ const orangeIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Component to dynamically fit map bounds to current active/filtered service markers
+const MapBoundsFitter: React.FC<{
+  services: ServiceLocation[];
+  defaultCenter: [number, number];
+  triggerKey: number;
+}> = ({ services, defaultCenter, triggerKey }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!services || services.length === 0) {
+      map.setView(defaultCenter, 15, { animate: true });
+      return;
+    }
+
+    if (services.length === 1) {
+      map.setView([services[0].latitude!, services[0].longitude!], 16, { animate: true });
+      return;
+    }
+
+    const validCoords = services
+      .filter(s => typeof s.latitude === 'number' && typeof s.longitude === 'number')
+      .map(s => [s.latitude!, s.longitude!] as [number, number]);
+
+    if (validCoords.length > 0) {
+      const bounds = L.latLngBounds(validCoords);
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: 16,
+          animate: true
+        });
+      }
+    }
+  }, [services, map, defaultCenter, triggerKey]);
+
+  return null;
+};
+
 export const MapView: React.FC = () => {
+  // Subscribe to real-time cloud data sync updates
+  const [, setSyncTick] = useState(0);
+  useEffect(() => {
+    return dataService.subscribeSync(() => {
+      setSyncTick(t => t + 1);
+    });
+  }, []);
+
   const allServices = dataService.getServiceLocations();
   const regions = dataService.getRegions();
   const categories = dataService.getCategories();
-  const uniqueRWs: string[] = Array.from(new Set(regions.map(r => r.rwCode))).sort();
 
-  // Filters (PRD Section 35)
+  // Combine RW list from regions and services
+  const uniqueRWs: string[] = Array.from(new Set([
+    ...regions.map(r => r.rwCode),
+    ...allServices.map(s => s.rw)
+  ].filter(Boolean))).sort();
+
+  // Filters - Default to ACTIVE to focus strictly on real active customer data!
   const [filterRW, setFilterRW] = useState('ALL');
   const [filterCategory, setFilterCategory] = useState('ALL');
-  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterStatus, setFilterStatus] = useState('ACTIVE');
+  const [focusTrigger, setFocusTrigger] = useState(0);
 
   // Filter service locations that have coordinates
   const filteredServices = allServices.filter(s => {
@@ -69,11 +122,12 @@ export const MapView: React.FC = () => {
     return true;
   });
 
-  // Services without GPS coordinates
-  const unmappedCount = allServices.filter(s => !s.latitude || !s.longitude).length;
+  // Count unmapped active services
+  const unmappedCount = allServices.filter(s => s.status === 'ACTIVE' && (!s.latitude || !s.longitude)).length;
+  const inactiveCount = allServices.filter(s => s.status === 'INACTIVE' && s.latitude && s.longitude).length;
 
-  // Center on Gedangan, Sidoarjo
-  const defaultCenter: [number, number] = [-7.3875, 112.7210];
+  // Real center of Desa Gedangan, Kec. Tuntang, Kab. Semarang
+  const defaultCenter: [number, number] = [-7.3287, 110.4640];
 
   const getMarkerIcon = (categoryName?: string) => {
     const lower = (categoryName || '').toLowerCase();
@@ -83,16 +137,31 @@ export const MapView: React.FC = () => {
     return orangeIcon;
   };
 
+  const handleResetFocus = () => {
+    setFocusTrigger(prev => prev + 1);
+  };
+
   return (
     <div className="space-y-5 max-w-7xl mx-auto pb-12">
       {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-          Peta Sebaran Lokasi Layanan (GPS)
-        </h1>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Visualisasi geografis pelanggan persampahan BUMDes Makmur Gedangan berdasarkan RW, RT, dan Kategori.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            Peta Sebaran Lokasi Layanan (GPS)
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Visualisasi geografis pelanggan persampahan BUMDes Makmur Gedangan berdasarkan RW, RT, dan Kategori.
+          </p>
+        </div>
+
+        <button
+          onClick={handleResetFocus}
+          className="inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition shadow-xs hover:shadow active:scale-95 cursor-pointer self-start sm:self-auto"
+          title="Fokuskan peta ke seluruh titik lokasi pelanggan real"
+        >
+          <Crosshair className="w-3.5 h-3.5 text-emerald-200" />
+          <span>Fokus ke Lokasi Real</span>
+        </button>
       </div>
 
       {/* Filter Toolbar */}
@@ -101,7 +170,7 @@ export const MapView: React.FC = () => {
           <select
             value={filterRW}
             onChange={(e) => setFilterRW(e.target.value)}
-            className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:ring-1 focus:ring-brand-500"
+            className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:ring-1 focus:ring-brand-500 font-medium"
           >
             <option value="ALL">Semua RW</option>
             {uniqueRWs.map(rw => <option key={rw} value={rw}>{rw}</option>)}
@@ -110,7 +179,7 @@ export const MapView: React.FC = () => {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:ring-1 focus:ring-brand-500"
+            className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:ring-1 focus:ring-brand-500 font-medium"
           >
             <option value="ALL">Semua Kategori</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -119,11 +188,11 @@ export const MapView: React.FC = () => {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:ring-1 focus:ring-brand-500"
+            className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:ring-1 focus:ring-brand-500 font-medium bg-emerald-50/50"
           >
-            <option value="ALL">Semua Status</option>
-            <option value="ACTIVE">Aktif</option>
-            <option value="INACTIVE">Nonaktif</option>
+            <option value="ACTIVE">Status: Aktif Saja (Lokasi Real)</option>
+            <option value="ALL">Status: Semua (Termasuk Nonaktif)</option>
+            <option value="INACTIVE">Status: Nonaktif Saja</option>
           </select>
         </div>
 
@@ -146,7 +215,7 @@ export const MapView: React.FC = () => {
       </div>
 
       {/* Map Card */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden h-[540px] relative">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden h-[560px] relative">
         <MapContainer
           center={defaultCenter}
           zoom={15}
@@ -158,6 +227,13 @@ export const MapView: React.FC = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
+          {/* Dynamic auto-bounds fitter that centers strictly on real locations */}
+          <MapBoundsFitter
+            services={filteredServices}
+            defaultCenter={defaultCenter}
+            triggerKey={focusTrigger}
+          />
+
           {filteredServices.map(srv => (
             <Marker
               key={srv.id}
@@ -166,7 +242,14 @@ export const MapView: React.FC = () => {
             >
               <Popup>
                 <div className="p-1 space-y-1.5 text-xs min-w-[210px]">
-                  <div className="font-bold text-slate-900 text-sm">{srv.name}</div>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="font-bold text-slate-900 text-sm">{srv.name}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      srv.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                    }`}>
+                      {srv.status === 'ACTIVE' ? 'Aktif' : 'Nonaktif'}
+                    </span>
+                  </div>
                   <div className="font-mono text-emerald-700 font-semibold">{srv.serviceCode}</div>
                   <div className="text-slate-600">Warga: <strong>{srv.customerName}</strong></div>
                   <div className="text-slate-500">{srv.address} ({srv.rt} / {srv.rw})</div>
@@ -209,11 +292,33 @@ export const MapView: React.FC = () => {
           ))}
         </MapContainer>
 
+        {/* Floating Quick Re-center Button in Map */}
+        <div className="absolute top-4 left-14 z-400">
+          <button
+            onClick={handleResetFocus}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/95 hover:bg-white backdrop-blur-md rounded-xl shadow-md border border-slate-200 text-xs font-bold text-slate-700 hover:text-emerald-700 transition cursor-pointer"
+            title="Pusatkan dan fokuskan kamera ke titik sebaran data real"
+          >
+            <Crosshair className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Pusatkan Lokasi</span>
+          </button>
+        </div>
+
         {/* Floating summary tag */}
-        <div className="absolute top-4 right-4 z-400 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-lg border border-slate-200 text-xs">
-          <div className="font-bold text-slate-900">{filteredServices.length} Lokasi Terpetakan</div>
+        <div className="absolute top-4 right-4 z-400 bg-white/95 backdrop-blur-md px-3.5 py-2.5 rounded-2xl shadow-lg border border-slate-200 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div className="font-bold text-slate-900">{filteredServices.length} Lokasi Terpetakan</div>
+          </div>
+          {filterStatus === 'ACTIVE' && inactiveCount > 0 && (
+            <div className="text-[10px] text-slate-400 mt-0.5">
+              {inactiveCount} lokasi nonaktif (dummy) otomatis disembunyikan
+            </div>
+          )}
           {unmappedCount > 0 && (
-            <div className="text-[10px] text-slate-400 mt-0.5">{unmappedCount} belum memiliki koordinat GPS</div>
+            <div className="text-[10px] text-amber-600 font-medium mt-0.5">
+              {unmappedCount} pelanggan aktif belum ada GPS
+            </div>
           )}
         </div>
       </div>
