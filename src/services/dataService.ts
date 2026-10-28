@@ -2354,12 +2354,12 @@ class DataService {
         return;
       }
 
-      // Jika data lokal memiliki lebih banyak pelanggan (misal 279 warga hasil import di laptop vs hanya 5 di cloud),
-      // dahulukan data lokal dan sinkronkan ke cloud agar data import tidak tertimpa!
+      // Jika cloud masih berisi data contoh/demo (<= 5) sedangkan lokal sudah punya data import asli (> 5),
+      // unggah data lokal ke cloud. Sebaliknya jika cloud sudah punya data master, selalu hydrate lokal dari cloud!
       const cloudCustRow = data.find((r: any) => r.key === STORAGE_KEYS.CUSTOMERS);
       const cloudCustCount = (cloudCustRow && Array.isArray(cloudCustRow.data)) ? cloudCustRow.data.length : 0;
-      if (this.customers.length > cloudCustCount) {
-        console.log(`Local memiliki ${this.customers.length} pelanggan vs Cloud ${cloudCustCount}. Mengunggah data lokal ke cloud...`);
+      if (cloudCustCount <= 5 && this.customers.length > 5) {
+        console.log(`Cloud hanya memiliki ${cloudCustCount} data demo vs Local ${this.customers.length}. Mengunggah data lokal ke cloud...`);
         await this.pushAllToCloud();
         return;
       }
