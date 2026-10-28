@@ -2006,20 +2006,26 @@ class DataService {
 
   public exportCustomersToExcel() {
     const services = this.getServiceLocations();
-    const rows = services.map(s => ({
-      'ID Pelanggan': s.customerCode,
-      'Nama Pelanggan': s.customerName,
-      'Kode Layanan': s.serviceCode,
-      'Nama Objek': s.name,
-      'Alamat': s.address,
-      'RT': s.rt,
-      'RW': s.rw,
-      'Kategori': s.categoryName,
-      'Tarif (Rp)': s.tariffAmount,
-      'Latitude': s.latitude || '',
-      'Longitude': s.longitude || '',
-      'Status': s.status
-    }));
+    const rows = services.map(s => {
+      const cust = this.customers.find(c => c.id === s.customerId);
+      const gmapsCoord = (s.latitude && s.longitude) ? `${s.latitude}, ${s.longitude}` : '';
+      return {
+        'ID Pelanggan': s.customerCode,
+        'Nama Pelanggan': s.customerName,
+        'No HP': cust?.phone || '',
+        'Kode Layanan': s.serviceCode,
+        'Nama Objek': s.name,
+        'Alamat': s.address,
+        'RT': s.rt,
+        'RW': s.rw,
+        'Kategori': s.categoryName,
+        'Tarif (Rp)': s.tariffAmount,
+        'Titik Lokasi Google Maps': gmapsCoord,
+        'Latitude': s.latitude || '',
+        'Longitude': s.longitude || '',
+        'Status': s.status
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
