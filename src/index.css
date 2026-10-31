@@ -19,21 +19,26 @@
 /* Print styles for digital receipts and official reports */
 @media print {
   @page {
-    margin: 12mm 15mm 15mm 15mm;
+    margin: 8mm 10mm 10mm 10mm;
     size: auto;
   }
   body {
     background: white !important;
     color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   body * {
     visibility: hidden;
   }
   #printable-receipt, #printable-receipt *,
-  #printable-report, #printable-report * {
+  #printable-report, #printable-report *,
+  #printable-customer-card, #printable-customer-card *,
+  #printable-a4-sheet, #printable-a4-sheet * {
     visibility: visible;
   }
-  #printable-receipt, #printable-report {
+  #printable-receipt, #printable-report,
+  #printable-customer-card, #printable-a4-sheet {
     position: absolute;
     left: 0;
     top: 0;
@@ -42,6 +47,14 @@
     padding: 0;
     background: white !important;
     color: #0f172a !important;
+  }
+  .page-break {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  .page-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
   .no-print {
     display: none !important;

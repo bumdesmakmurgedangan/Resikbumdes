@@ -81,6 +81,13 @@ class DataService {
       this.settings.faviconUrl = '/logo.webp';
       this.save(STORAGE_KEYS.SETTINGS, this.settings);
     }
+    if (!this.settings.cardBackgroundUrl) {
+      this.settings.cardBackgroundUrl = '/card-template-bumdes.jpg';
+      this.settings.cardTheme = 'BUMDES_OFFICIAL';
+      this.settings.cardTextColorTheme = 'DARK';
+      this.settings.cardShowHeaderLogo = false;
+      this.save(STORAGE_KEYS.SETTINGS, this.settings);
+    }
     this.users = this.load(STORAGE_KEYS.USERS, INITIAL_USERS);
     this.roles = this.load(STORAGE_KEYS.ROLES, INITIAL_ROLES);
     this.permissions = INITIAL_PERMISSIONS;

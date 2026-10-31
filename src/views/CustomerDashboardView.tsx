@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { dataService } from '../services/dataService';
 import { Bill, ServiceLocation, Payment, BankAccount, Receipt, Broadcast } from '../types';
 import { ReceiptModal } from '../components/common/ReceiptModal';
+import { CustomerCardModal } from '../components/customer/CustomerCardModal';
 import { SocialBrandIcon, getSocialBadgeStyle } from '../components/common/SocialBrandIcon';
 import {
   Home, Store, Building, AlertCircle, CheckCircle2, Clock,
@@ -51,6 +52,7 @@ export const CustomerDashboardView: React.FC<CustomerDashboardViewProps> = ({
   // Payment Modal States
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [cardModalOpen, setCardModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'TRANSFER' | 'QRIS' | 'TUNAI'>('TRANSFER');
   const [selectedBankId, setSelectedBankId] = useState<string>(bankAccounts[0]?.id || '');
   const [proofPreviewUrl, setProofPreviewUrl] = useState<string | null>(null);
@@ -338,7 +340,16 @@ export const CustomerDashboardView: React.FC<CustomerDashboardViewProps> = ({
                 <p className="text-xs text-brand-100 mt-1 max-w-md">{currentCustomer.address}</p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCardModalOpen(true)}
+                  className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer"
+                  title="Lihat, Unduh & Cetak Kartu Pelanggan Digital Anda"
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>Kartu Digital</span>
+                </button>
                 <button
                   onClick={() => setChangePinModalOpen(true)}
                   className="px-3.5 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-xs font-semibold backdrop-blur-sm transition flex items-center gap-2 cursor-pointer"
@@ -1269,6 +1280,16 @@ export const CustomerDashboardView: React.FC<CustomerDashboardViewProps> = ({
         receipt={selectedReceipt}
         onClose={() => setSelectedReceipt(null)}
       />
+
+      {/* ================= CUSTOMER DIGITAL CARD MODAL ================= */}
+      {cardModalOpen && (
+        <CustomerCardModal
+          customer={currentCustomer}
+          service={services[0]}
+          settings={settings}
+          onClose={() => setCardModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

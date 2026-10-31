@@ -7,22 +7,28 @@ import {
   Home, Store, Building, MapPin, CheckCircle2, XCircle,
   Eye, RefreshCw, AlertCircle, Navigation, ExternalLink, Check,
   Phone, Clock, MessageSquare, ThumbsUp, ThumbsDown, CheckSquare, Sparkles, Send, X,
-  FileText, Calendar, DollarSign
+  FileText, Calendar, DollarSign, CreditCard, Layers
 } from 'lucide-react';
 import { parseGoogleMapsLocation } from '../utils/geoUtils';
 import { ReceiptModal } from '../components/common/ReceiptModal';
+import { CustomerCardModal } from '../components/customer/CustomerCardModal';
+import { BatchPrintCardsModal } from '../components/customer/BatchPrintCardsModal';
 
 export const CustomersView: React.FC = () => {
   const { currentUser, hasPermission } = useAuth();
-  if (!currentUser) return null;
 
   const [refreshKey, setRefreshKey] = useState(0);
+  const settings = dataService.getSettings();
   const customers = dataService.getCustomers();
   const allServices = dataService.getServiceLocations();
   const categories = dataService.getCategories();
   const tariffs = dataService.getTariffs();
   const regions = dataService.getRegions();
   const uniqueRWs: string[] = Array.from(new Set(regions.map(r => r.rwCode))).sort();
+
+  // Customer Card Modals State
+  const [selectedCustomerForCard, setSelectedCustomerForCard] = useState<Customer | null>(null);
+  const [batchPrintOpen, setBatchPrintOpen] = useState(false);
 
   // Sub Tab Navigation
   const [mainTab, setMainTab] = useState<'REGISTERED' | 'APPLICATIONS'>('REGISTERED');
@@ -159,6 +165,8 @@ export const CustomersView: React.FC = () => {
   const [manualBillStatus, setManualBillStatus] = useState<'OVERDUE' | 'UNPAID' | 'PAID'>('OVERDUE');
   const [manualBillNotes, setManualBillNotes] = useState('');
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
+
+  if (!currentUser) return null;
 
   const filteredCustomers = customers.filter(c => {
     if (search.trim()) {
@@ -557,15 +565,27 @@ export const CustomersView: React.FC = () => {
           </p>
         </div>
 
-        {hasPermission('CUSTOMER_CREATE') && (
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           <button
-            onClick={() => setAddCustomerModalOpen(true)}
-            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5 self-start sm:self-auto"
+            type="button"
+            onClick={() => setBatchPrintOpen(true)}
+            className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-2 cursor-pointer"
+            title="Cetak & Unduh Lembaran Kartu A4 (Massal per RW)"
           >
-            <UserPlus className="w-4 h-4" />
-            <span>+ Daftarkan Pelanggan Baru</span>
+            <Layers className="w-4 h-4 text-emerald-200" />
+            <span>Cetak Kartu A4 (Massal)</span>
           </button>
-        )}
+
+          {hasPermission('CUSTOMER_CREATE') && (
+            <button
+              onClick={() => setAddCustomerModalOpen(true)}
+              className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>+ Daftarkan Pelanggan Baru</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Sub Tabs: Pelanggan Terdaftar vs Permintaan Pendaftaran */}
@@ -712,6 +732,15 @@ export const CustomersView: React.FC = () => {
                       </td>
 
                       <td className="py-3.5 px-4 align-middle text-right whitespace-nowrap space-x-1.5">
+                        <button
+                          onClick={() => setSelectedCustomerForCard(cust)}
+                          className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer border border-emerald-200/60"
+                          title="Cetak / Unduh Kartu Pelanggan Digital"
+                        >
+                          <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Kartu</span>
+                        </button>
+
                         <button
                           onClick={() => setSelectedCustomer(cust)}
                           className="px-2.5 py-1.5 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg text-slate-700 font-semibold transition cursor-pointer text-xs"
@@ -1279,13 +1308,23 @@ export const CustomersView: React.FC = () => {
                 <h4 className="font-bold text-xs uppercase text-slate-500 tracking-wider">
                   Daftar Lokasi Layanan Kebersihan (Multi-Service)
                 </h4>
-                <button
-                  onClick={() => setAddServiceModalOpen(true)}
-                  className="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-800 rounded-lg text-xs font-bold transition flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Tambah Lokasi Baru</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSelectedCustomerForCard(selectedCustomer)}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    title="Cetak atau Unduh Kartu Pelanggan Ini"
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Cetak / Unduh Kartu</span>
+                  </button>
+                  <button
+                    onClick={() => setAddServiceModalOpen(true)}
+                    className="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-800 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Tambah Lokasi Baru</span>
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -2528,6 +2567,28 @@ export const CustomersView: React.FC = () => {
         <ReceiptModal
           receipt={viewingReceipt}
           onClose={() => setViewingReceipt(null)}
+        />
+      )}
+
+      {/* ================= SINGLE CUSTOMER CARD MODAL ================= */}
+      {selectedCustomerForCard && (
+        <CustomerCardModal
+          customer={selectedCustomerForCard}
+          service={allServices.find(s => s.customerId === selectedCustomerForCard.id)}
+          settings={settings}
+          onClose={() => setSelectedCustomerForCard(null)}
+        />
+      )}
+
+      {/* ================= BATCH PRINT / DOWNLOAD A4 MODAL ================= */}
+      {batchPrintOpen && (
+        <BatchPrintCardsModal
+          customers={customers}
+          allServices={allServices}
+          uniqueRWs={uniqueRWs}
+          settings={settings}
+          initialRW={filterRW}
+          onClose={() => setBatchPrintOpen(false)}
         />
       )}
     </div>

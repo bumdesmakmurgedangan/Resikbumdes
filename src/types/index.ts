@@ -289,6 +289,12 @@ export interface SystemSettings {
   signer2Title?: string;
   signer2Name?: string;
   signer2Id?: string;
+
+  // Konfigurasi Desain & Template Background Kartu Pelanggan
+  cardBackgroundUrl?: string; // Custom uploaded background image (Data URL / link)
+  cardTheme?: 'BUMDES_OFFICIAL' | 'EMERALD_GOLD' | 'ROYAL_NAVY' | 'MODERN_CLEAN' | 'CUSTOM';
+  cardTextColorTheme?: 'DARK' | 'LIGHT';
+  cardShowHeaderLogo?: boolean;
 }
 
 export interface ImportItem {

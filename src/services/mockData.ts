@@ -30,7 +30,13 @@ export const INITIAL_SYSTEM_SETTINGS: SystemSettings = {
   signer1Id: 'NIP / ID: DIR-BUMDES-01',
   signer2Title: 'Bendahara / Petugas Operasional',
   signer2Name: 'Siti Aminah',
-  signer2Id: 'Unit Usaha Persampahan RESIK'
+  signer2Id: 'Unit Usaha Persampahan RESIK',
+
+  // Default Kartu Pelanggan
+  cardTheme: 'BUMDES_OFFICIAL',
+  cardTextColorTheme: 'DARK',
+  cardShowHeaderLogo: false,
+  cardBackgroundUrl: '/card-template-bumdes.jpg'
 };
 
 export const INITIAL_PERMISSIONS: Permission[] = [

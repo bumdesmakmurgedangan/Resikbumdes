@@ -10,17 +10,18 @@ import {
   Tag, Calendar, MessageSquare, Users, Shield, Plus,
   Edit2, Trash2, Check, X, Database, RefreshCw, Upload, Image,
   CheckCircle2, RotateCcw, Smartphone, Sparkles, AlertTriangle, AlertCircle, Lock,
-  Copy, Cloud, CloudUpload, CloudDownload
+  Copy, Cloud, CloudUpload, CloudDownload, Palette, Sun, Moon, Eye
 } from 'lucide-react';
 import { saveSupabaseConfig, clearSupabaseConfig, getSupabaseConfig } from '../lib/supabase';
 import { SocialBrandIcon, getSocialBadgeStyle } from '../components/common/SocialBrandIcon';
+import { CustomerCard } from '../components/customer/CustomerCard';
 
 export const SettingsView: React.FC = () => {
   const { currentUser, role } = useAuth();
   if (!currentUser) return null;
 
   const [activeTab, setActiveTab] = useState<
-    'PROFIL' | 'KOP' | 'LINKS' | 'BANK' | 'QRIS' | 'WILAYAH' | 'TARIF' | 'TEMPLATES' | 'USERS' | 'SUPABASE'
+    'PROFIL' | 'KOP' | 'LINKS' | 'BANK' | 'QRIS' | 'WILAYAH' | 'TARIF' | 'TEMPLATES' | 'USERS' | 'SUPABASE' | 'KARTU'
   >('PROFIL');
 
   const [refreshKey, setRefreshKey] = useState(0);
@@ -33,6 +34,24 @@ export const SettingsView: React.FC = () => {
   const tariffs = dataService.getTariffs();
   const regions = dataService.getRegions();
   const [templateList, setTemplateList] = useState<MessageTemplate[]>(dataService.getMessageTemplates());
+
+  // Template Kartu Custom Background State
+  const cardBgInputRef = React.useRef<HTMLInputElement>(null);
+  const [cardUploadError, setCardUploadError] = useState<string | null>(null);
+
+  const sampleCardCustomer = dataService.getCustomers()[0] || {
+    id: 'sample-c1',
+    customerCode: 'PLG-RW01-0001',
+    name: 'Bpk. Bambang Sudarsono',
+    phone: '081234567890',
+    address: 'RT 02 / RW 01, Dusun Krajan',
+    pinHash: '1234',
+    isDefaultPin: false,
+    status: 'ACTIVE' as const,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const sampleCardService = dataService.getServiceLocations()[0];
   const [selectedTemplateType, setSelectedTemplateType] = useState<TemplateType>('WHATSAPP_ACCOUNT_CONFIRMATION');
   const [saveSuccessId, setSaveSuccessId] = useState<string | null>(null);
   const users = dataService.getUsers();
@@ -328,6 +347,15 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role
           className={`px-3 py-2 rounded-xl transition ${activeTab === 'QRIS' ? 'bg-white text-brand-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
         >
           QRIS Pembayaran
+        </button>
+        <button
+          onClick={() => setActiveTab('KARTU')}
+          className={`px-3 py-2 rounded-xl transition flex items-center gap-1.5 ${
+            activeTab === 'KARTU' ? 'bg-white text-brand-900 shadow-sm font-bold' : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <Palette className="w-3.5 h-3.5 text-purple-600" />
+          <span>Template Kartu</span>
         </button>
         <button
           onClick={() => setActiveTab('LINKS')}
@@ -982,6 +1010,346 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role
               Simpan Konfigurasi QRIS
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ================= TAB: TEMPLATE KARTU PELANGGAN ================= */}
+      {activeTab === 'KARTU' && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-6 max-w-4xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+              <h2 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                <Palette className="w-5 h-5 text-purple-600" />
+                <span>Pengaturan Desain & Template Background Kartu Pelanggan</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Pilih tema bawaan mewah atau upload gambar template dari Canva/Photoshop. Template ini otomatis diterapkan ke seluruh kartu digital dan cetak massal A4.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                dataService.updateSettings(settings, currentUser);
+                alert('Konfigurasi desain template kartu berhasil disimpan!');
+              }}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+            >
+              <Check className="w-4 h-4" />
+              <span>Simpan Perubahan</span>
+            </button>
+          </div>
+
+          {/* Live Preview Container */}
+          <div className="bg-slate-100/80 p-5 rounded-3xl border border-slate-200/90 flex flex-col items-center">
+            <div className="w-full flex items-center justify-between text-xs text-slate-500 font-bold mb-3 px-2">
+              <span className="flex items-center gap-1.5">
+                <Eye className="w-4 h-4 text-emerald-600" />
+                Pratinjau Langsung Kartu Pelanggan
+              </span>
+              <span className="font-normal text-[11px] text-slate-400">Rasio Standar ID Card (CR80)</span>
+            </div>
+
+            <div className="w-full max-w-[430px] shadow-2xl rounded-2xl overflow-hidden">
+              <CustomerCard
+                customer={sampleCardCustomer}
+                service={sampleCardService}
+                settings={settings}
+                variant="single"
+              />
+            </div>
+          </div>
+
+          {/* Theme Selector Grid */}
+          <div className="space-y-3">
+            <label className="block font-bold text-xs uppercase tracking-wider text-slate-700">
+              Pilihan Desain & Latar Belakang:
+            </label>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              {/* Preset Resmi BUMDes */}
+              <button
+                type="button"
+                onClick={() => setSettings({
+                  ...settings,
+                  cardTheme: 'BUMDES_OFFICIAL',
+                  cardBackgroundUrl: '/card-template-bumdes.jpg',
+                  cardTextColorTheme: 'DARK',
+                  cardShowHeaderLogo: false
+                })}
+                className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between h-32 cursor-pointer ${
+                  (settings.cardTheme || 'BUMDES_OFFICIAL') === 'BUMDES_OFFICIAL'
+                    ? 'border-emerald-600 ring-2 ring-emerald-500/30 bg-emerald-950 text-white shadow-md'
+                    : 'border-slate-200 bg-emerald-900 text-white hover:opacity-90'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-amber-300">RESMI BUMDES</span>
+                  {(settings.cardTheme || 'BUMDES_OFFICIAL') === 'BUMDES_OFFICIAL' && (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-extrabold text-xs">Template Resmi BUMDes</div>
+                  <p className="text-[10px] text-emerald-200/80 mt-0.5">Truk operasional, bukit desa & footer kontak</p>
+                </div>
+              </button>
+
+              {/* Preset 2: Emerald Gold */}
+              <button
+                type="button"
+                onClick={() => setSettings({
+                  ...settings,
+                  cardTheme: 'EMERALD_GOLD',
+                  cardBackgroundUrl: '',
+                  cardTextColorTheme: 'LIGHT',
+                  cardShowHeaderLogo: true
+                })}
+                className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between h-32 cursor-pointer ${
+                  settings.cardTheme === 'EMERALD_GOLD'
+                    ? 'border-emerald-600 ring-2 ring-emerald-500/30 bg-emerald-950 text-white shadow-md'
+                    : 'border-slate-200 bg-emerald-900/80 text-white hover:opacity-90'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-amber-300">PRESET 2</span>
+                  {settings.cardTheme === 'EMERALD_GOLD' && (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-extrabold text-xs">Emerald Gold</div>
+                  <p className="text-[10px] text-emerald-200/80 mt-0.5">Zamrud premium ornamen emas & smartchip</p>
+                </div>
+              </button>
+
+              {/* Preset 3: Royal Navy */}
+              <button
+                type="button"
+                onClick={() => setSettings({
+                  ...settings,
+                  cardTheme: 'ROYAL_NAVY',
+                  cardBackgroundUrl: '',
+                  cardTextColorTheme: 'LIGHT',
+                  cardShowHeaderLogo: true
+                })}
+                className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between h-32 cursor-pointer ${
+                  settings.cardTheme === 'ROYAL_NAVY'
+                    ? 'border-blue-600 ring-2 ring-blue-500/30 bg-slate-950 text-white shadow-md'
+                    : 'border-slate-200 bg-slate-900 text-white hover:opacity-90'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-sky-300">PRESET 3</span>
+                  {settings.cardTheme === 'ROYAL_NAVY' && (
+                    <CheckCircle2 className="w-4 h-4 text-sky-400" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-extrabold text-xs">Royal Sapphire Navy</div>
+                  <p className="text-[10px] text-slate-300 mt-0.5">Biru safir modern corporate & aksen futuristik</p>
+                </div>
+              </button>
+
+              {/* Preset 4: Modern Clean */}
+              <button
+                type="button"
+                onClick={() => setSettings({
+                  ...settings,
+                  cardTheme: 'MODERN_CLEAN',
+                  cardBackgroundUrl: '',
+                  cardTextColorTheme: 'DARK',
+                  cardShowHeaderLogo: true
+                })}
+                className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between h-32 cursor-pointer ${
+                  settings.cardTheme === 'MODERN_CLEAN'
+                    ? 'border-emerald-600 ring-2 ring-emerald-500/30 bg-white text-slate-900 shadow-md'
+                    : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-emerald-700">PRESET 4</span>
+                  {settings.cardTheme === 'MODERN_CLEAN' && (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-extrabold text-xs">Modern Clean</div>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Latar bersih minimalis hemat tinta cetak</p>
+                </div>
+              </button>
+
+              {/* Custom Upload */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSettings({ ...settings, cardTheme: 'CUSTOM' });
+                  if (!settings.cardBackgroundUrl && cardBgInputRef.current) {
+                    cardBgInputRef.current.click();
+                  }
+                }}
+                className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between h-32 cursor-pointer ${
+                  settings.cardTheme === 'CUSTOM'
+                    ? 'border-purple-600 ring-2 ring-purple-500/30 bg-purple-50 text-purple-950 shadow-md'
+                    : 'border-dashed border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-purple-700 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    CUSTOM
+                  </span>
+                  {settings.cardTheme === 'CUSTOM' && (
+                    <CheckCircle2 className="w-4 h-4 text-purple-600" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-extrabold text-xs">Upload Canva / PS</div>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Pakai gambar latar Anda sendiri</p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Custom Background Upload Area */}
+          {settings.cardTheme === 'CUSTOM' && (
+            <div className="bg-purple-50/50 rounded-2xl border border-purple-200 p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-purple-100 pb-3">
+                <div>
+                  <h4 className="font-bold text-xs uppercase text-slate-800">
+                    File Gambar Template Background
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Format: JPG, PNG, atau WEBP • Ukuran rekomendasi: <strong>1000 × 630 px</strong> (Rasio 1.586 : 1)
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    ref={cardBgInputRef}
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (!file.type.startsWith('image/')) {
+                        setCardUploadError('File harus berupa gambar (PNG/JPG).');
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setSettings({
+                          ...settings,
+                          cardTheme: 'CUSTOM',
+                          cardBackgroundUrl: reader.result as string
+                        });
+                        setCardUploadError(null);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => cardBgInputRef.current?.click()}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{settings.cardBackgroundUrl ? 'Ganti File Gambar' : 'Pilih File Gambar'}</span>
+                  </button>
+
+                  {settings.cardBackgroundUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, cardBackgroundUrl: '' })}
+                      className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition border border-rose-200 cursor-pointer"
+                      title="Hapus background custom"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {cardUploadError && (
+                <div className="text-xs text-rose-600 font-medium bg-rose-50 p-2.5 rounded-xl border border-rose-200">
+                  {cardUploadError}
+                </div>
+              )}
+
+              {/* Adjustments for Custom Template */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Text Color Setting */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Warna Teks & Informasi (Kontras):
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, cardTextColorTheme: 'LIGHT' })}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                        settings.cardTextColorTheme !== 'DARK'
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Moon className="w-3.5 h-3.5" />
+                      <span>Teks Putih (Gelap)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, cardTextColorTheme: 'DARK' })}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                        settings.cardTextColorTheme === 'DARK'
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Sun className="w-3.5 h-3.5" />
+                      <span>Teks Hitam (Terang)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Show Header Logo Toggle */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Tampilkan Logo BUMDes Otomatis:
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, cardShowHeaderLogo: true })}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                        settings.cardShowHeaderLogo !== false
+                          ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Tampilkan Logo</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, cardShowHeaderLogo: false })}
+                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                        settings.cardShowHeaderLogo === false
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Sembunyikan Logo</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

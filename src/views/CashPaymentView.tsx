@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { dataService } from '../services/dataService';
 import { Customer, Bill, Receipt } from '../types';
 import { ReceiptModal } from '../components/common/ReceiptModal';
+import { QrScannerModal } from '../components/customer/QrScannerModal';
+import { CustomerCardModal } from '../components/customer/CustomerCardModal';
 import {
   Banknote, Search, CheckCircle2, User, Home,
-  Calendar, FileText, ArrowRight
+  Calendar, FileText, ArrowRight, Camera, CreditCard
 } from 'lucide-react';
 
 export const CashPaymentView: React.FC = () => {
   const { currentUser } = useAuth();
-  if (!currentUser) return null;
 
   const [search, setSearch] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -18,8 +19,50 @@ export const CashPaymentView: React.FC = () => {
   const [paymentNotes, setPaymentNotes] = useState('');
   const [processing, setProcessing] = useState(false);
 
+  // QR Scanner & Customer Card states
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [cardModalOpen, setCardModalOpen] = useState(false);
+  const settings = dataService.getSettings();
+
   // Digital receipt modal
   const [generatedReceipt, setGeneratedReceipt] = useState<Receipt | null>(null);
+
+  // Auto-detect ?code= query param on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const codeParam = params.get('code') || params.get('customer') || params.get('id');
+    if (codeParam) {
+      const cust = dataService.getCustomerByCodeOrPhone(codeParam);
+      if (cust) {
+        setSelectedCustomer(cust);
+        const bills = dataService.getBills({ customerId: cust.id }).filter(
+          b => b.status === 'UNPAID' || b.status === 'OVERDUE' || b.status === 'REJECTED'
+        );
+        if (bills.length > 0) {
+          setSelectedBillId(bills[0].id);
+        }
+      }
+    }
+  }, []);
+
+  const handleScanSuccess = (scannedCode: string) => {
+    setScannerOpen(false);
+    const cust = dataService.getCustomerByCodeOrPhone(scannedCode);
+    if (cust) {
+      setSelectedCustomer(cust);
+      setSearch('');
+      const bills = dataService.getBills({ customerId: cust.id }).filter(
+        b => b.status === 'UNPAID' || b.status === 'OVERDUE' || b.status === 'REJECTED'
+      );
+      if (bills.length > 0) {
+        setSelectedBillId(bills[0].id);
+      }
+    } else {
+      alert(`ID Pelanggan "${scannedCode}" tidak ditemukan di sistem.`);
+    }
+  };
+
+  if (!currentUser) return null;
 
   const customers = dataService.getCustomers().filter(c => c.status === 'ACTIVE');
   const filteredCustomers = search.trim()
@@ -82,9 +125,21 @@ export const CashPaymentView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Step 1: Cari Pelanggan */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-3">
-          <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
-            <div className="w-6 h-6 rounded-full bg-brand-100 text-brand-800 flex items-center justify-center text-xs">1</div>
-            <span>Cari Data Pelanggan</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
+              <div className="w-6 h-6 rounded-full bg-brand-100 text-brand-800 flex items-center justify-center text-xs">1</div>
+              <span>Cari Data Pelanggan</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setScannerOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+              title="Arahkan kamera ke QR Code kartu atau stiker rumah warga"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Scan QR Kartu</span>
+            </button>
           </div>
 
           <div className="relative">
@@ -129,11 +184,23 @@ export const CashPaymentView: React.FC = () => {
 
           {/* Selected Customer Card */}
           {selectedCustomer && (
-            <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
-              <div className="text-[10px] uppercase font-bold text-emerald-800">Pelanggan Terpilih</div>
-              <div className="font-black text-slate-900 text-sm mt-0.5">{selectedCustomer.name}</div>
-              <div className="text-xs text-slate-600 font-mono mt-0.5">{selectedCustomer.customerCode} • {selectedCustomer.phone || 'Tanpa HP'}</div>
-              <div className="text-xs text-slate-500 mt-1">{selectedCustomer.address}</div>
+            <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase font-bold text-emerald-800">Pelanggan Terpilih</div>
+                <div className="font-black text-slate-900 text-sm mt-0.5 truncate">{selectedCustomer.name}</div>
+                <div className="text-xs text-slate-600 font-mono mt-0.5">{selectedCustomer.customerCode} • {selectedCustomer.phone || 'Tanpa HP'}</div>
+                <div className="text-xs text-slate-500 mt-1 line-clamp-1">{selectedCustomer.address}</div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCardModalOpen(true)}
+                className="px-2.5 py-1.5 bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50 font-bold text-[11px] rounded-lg transition flex items-center gap-1 shrink-0 cursor-pointer shadow-2xs"
+                title="Buka Pratinjau Kartu Pelanggan"
+              >
+                <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Kartu</span>
+              </button>
             </div>
           )}
         </div>
@@ -251,6 +318,24 @@ export const CashPaymentView: React.FC = () => {
         onClose={() => setGeneratedReceipt(null)}
         triggerConfetti={true}
       />
+
+      {/* QR Scanner Camera Modal */}
+      {scannerOpen && (
+        <QrScannerModal
+          onScanSuccess={handleScanSuccess}
+          onClose={() => setScannerOpen(false)}
+        />
+      )}
+
+      {/* Customer Card Modal */}
+      {cardModalOpen && selectedCustomer && (
+        <CustomerCardModal
+          customer={selectedCustomer}
+          service={dataService.getServiceLocations(selectedCustomer.id)[0]}
+          settings={settings}
+          onClose={() => setCardModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
